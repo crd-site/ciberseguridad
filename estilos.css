@@ -1,7 +1,7 @@
 body {
   font-family: 'Segoe UI', sans-serif;
-  background-color: #1e1e1e;
-  color: #eaeaea;
+  background-color: #121212;
+  color: #f0f0f0;
   margin: 0;
   padding: 20px;
 }
@@ -17,7 +17,7 @@ a:hover {
 
 code {
   background-color: #333;
-  color: #f8f8f8;
+  color: #ffd700;
   padding: 2px 6px;
   border-radius: 4px;
   font-family: monospace;
@@ -44,7 +44,7 @@ h3 {
 }
 
 .etica {
-  color: #f28b82;
+  color: #ff6666;
 }
 
 ul, ol {
@@ -52,24 +52,31 @@ ul, ol {
 }
 
 blockquote {
-  background-color: #2a2a2a;
+  background-color: #1e1e1e;
   color: #ffcc66;
   padding: 10px;
   border-left: 4px solid #ffcc66;
   border-radius: 4px;
   margin: 10px 0;
+  font-style: italic;
 }
 
 .contenedor-vm {
   max-width: 800px;
   margin: auto;
-  background-color: #2b2b2b;
-  padding: 20px;
+  background-color: #1c1c1c;
+  padding: 25px;
   border-radius: 10px;
-  border: 1px solid #444;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  border: 1px solid #333;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
 }
 
 ul[style*="columns:2"] {
   columns: 2;
+}
+
+/* Corregir textos deshabilitados heredados */
+li, p, strong, em {
+  color: inherit;
+  opacity: 1 !important;
 }
