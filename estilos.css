@@ -17,7 +17,7 @@ a:hover {
 
 code {
   background-color: #333;
-  color: #eaeaea;
+  color: #f8f8f8;
   padding: 2px 6px;
   border-radius: 4px;
   font-family: monospace;
@@ -29,8 +29,8 @@ hr {
   margin: 24px 0;
 }
 
-h2, h3 {
-  color: #66b3ff;
+h2 {
+  color: #1e90ff;
 }
 
 h2 em {
@@ -38,8 +38,12 @@ h2 em {
   font-style: italic;
 }
 
-h3[style*="color:#a94442"],
-h3[style*="color:#a94442"] {
+h3 {
+  color: #66b3ff;
+  margin-top: 24px;
+}
+
+.etica {
   color: #f28b82;
 }
 
@@ -69,4 +73,3 @@ blockquote {
 ul[style*="columns:2"] {
   columns: 2;
 }
-
