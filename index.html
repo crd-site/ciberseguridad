@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Inicio - Guía Técnica</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #121212;
+      color: #f0f0f0;
+      font-family: 'Roboto', sans-serif;
+      padding: 2em;
+    }
+    h1 {
+      color: #ffcc80;
+    }
+    .fecha {
+      font-size: 1.2em;
+      color: #80cbc4;
+    }
+    a {
+      color: #4fc3f7;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>Inicio</h1>
+  
+<nav style="margin-bottom: 1.5em;">
+  <a href="index.html" style="margin-right: 15px;">🏠 Inicio</a>
+  <a href="vmware.html" style="margin-right: 15px;">💻 VMware</a>
+  <a href="gns3.html">📡 GNS3</a>
+</nav>
+
+  <div class="contenido">
+    <p>Bienvenido/a a la guía técnica. Elegí una sección del menú para comenzar.</p>
+  </div>
+  <p class="fecha">📅 Fecha actual: <span id="fecha"></span></p>
+  <script>
+    const ahora = new Date();
+    const opciones = {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    };
+    document.getElementById("fecha").textContent = ahora.toLocaleString("es-PY", opciones);
+  </script>
+</body>
+</html>
