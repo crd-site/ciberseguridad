@@ -1,76 +1,56 @@
-<section>
-  <h2>🛠️ Guía de instalación de GNS3 (modo local vs. servidor en VMware)</h2>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía GNS3 | Mi Sitio Web</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+  <div data-include="header"></div>
 
-  <p><strong>Descarga:</strong> 
-    <a href="https://www.gns3.com/software/download" target="_blank">GNS3 y GNS3 VM</a>
-  </p>
-  <p><strong>Documentación oficial:</strong> 
-    <a href="https://docs.gns3.com/docs/" target="_blank">docs.gns3.com</a>
-  </p>
+  <main>
+    <!-- 📌 Aquí pegás el contenido de la guía de instalación GNS3 -->
+    <!-- ✅ Por ejemplo: -->
+    <h1>🛠️ Guía de instalación de GNS3 (modo local vs. servidor en VMware)</h1>
+    <p><strong>Descarga:</strong> <a href="https://www.gns3.com/software/download" target="_blank">GNS3 y GNS3 VM</a></p>
+    <p><strong>Documentación oficial:</strong> <a href="https://docs.gns3.com/docs/" target="_blank">docs.gns3.com</a></p>
 
-  <hr>
-
-  <h3>⚙️ ¿Instalación local o con servidor en VMware?</h3>
-  <ul>
-    <li><strong>Local:</strong> Todo corre en tu PC. Más simple, pero consume muchos recursos si usás varias máquinas virtuales o imágenes pesadas.</li>
-    <li><strong>Con VMware:</strong> Usás una VM externa (GNS3 VM) que ejecuta los dispositivos, mientras tu PC actúa como cliente. Esto mejora el rendimiento, la estabilidad y facilita el uso de imágenes avanzadas (como Cisco IOU, ASA, etc.).</li>
-  </ul>
-
-  <blockquote>
-    👉 <strong>Recomendado:</strong> Usar GNS3 VM en VMware para entornos de red más exigentes.
-  </blockquote>
-
-  <hr>
-
-  <h3>📥 Pasos para instalar GNS3 con VMware</h3>
-  <ol>
-    <li>
-      <strong>Descargar e importar la GNS3 VM</strong><br>
-      - Descargá el archivo <code>.ova</code> desde la web oficial.<br>
-      - En VMware Workstation: <code>File → Open</code> y seleccioná el archivo.<br>
-      - Aceptá la configuración por defecto y finalizá la importación.
-    </li>
-    <li>
-      <strong>Iniciar la GNS3 VM</strong><br>
-      - Abrí la VM y esperá a que arranque completamente.<br>
-      - La IP asignada aparecerá en pantalla (por ej. <code>192.168.56.101</code>).
-    </li>
-    <li>
-      <strong>Configurar GNS3 Desktop</strong><br>
-      - Abrí GNS3, accedé al <em>Setup Wizard</em>.<br>
-      - Elegí la opción: <strong>"Run appliances in a virtual machine (GNS3 VM)"</strong>.<br>
-      - Confirmá que la IP coincida con la de la GNS3 VM.
-    </li>
-    <li>
-      <strong>Añadir imágenes IOS</strong><br>
-      En el menú:
-      <pre><code>Edit → Preferences → IOS Routers → New</code></pre>
-      Luego:
+    <section class="box">
+      <h2>❓¿Instalación local o con servidor en VMware?</h2>
       <ul>
-        <li>Seleccioná "Run the IOS on the GNS3 VM"</li>
-        <li>Cargá la imagen IOS y configurá recursos (RAM, interfaces)</li>
-        <li>Calculá el <code>Idle-PC</code> recomendado</li>
+        <li><strong>Local:</strong> Todo corre en tu PC. Más simple, pero consume muchos recursos si usás varias máquinas virtuales o imágenes pesadas.</li>
+        <li><strong>Con VMware:</strong> Usás una VM externa (GNS3 VM) que ejecuta los dispositivos, mientras tu PC actúa como cliente. Esto mejora el rendimiento, la estabilidad y facilita el uso de imágenes avanzadas (como Cisco IOU, ASA, etc.).</li>
       </ul>
-    </li>
-    <li>
-      <strong>Validar conexión</strong><br>
-      - Si la configuración fue correcta, GNS3 detectará automáticamente la VM y estará lista para usar.<br>
-      - Ahora podés crear topologías arrastrando routers, switches, etc.
-    </li>
-  </ol>
+      <p>👉 <strong>Recomendado:</strong> Usar GNS3 VM en VMware para entornos de red más exigentes.</p>
+    </section>
 
-  <hr>
+    <section>
+      <h2>📘 Pasos para instalar GNS3 con VMware</h2>
+      <ol>
+        <li><strong>Descargar e importar la GNS3 VM</strong><br>
+          - Descargá el archivo <code>.ova</code> desde la web oficial.<br>
+          - En VMware Workstation: <code>File → Open</code> y seleccioná el archivo.<br>
+          - Aceptá la configuración por defecto y finalizá la importación.
+        </li>
+        <li><strong>Iniciar la GNS3 VM</strong><br>
+          - Abrí la VM y esperá que arranque completamente.<br>
+          - La IP asignada aparecerá en pantalla (por ej. <code>192.168.56.101</code>).
+        </li>
+        <li><strong>Configurar GNS3 Desktop</strong><br>
+          - Abrí GNS3, accedé al <em>Setup Wizard</em>.<br>
+          - Elegí la opción: <strong>"Run appliances in a virtual machine (GNS3 VM)"</strong>.<br>
+          - Confirmá que la IP coincida con la de la GNS3 VM.
+        </li>
+        <li><strong>Añadir imágenes IOS</strong><br>
+          - Desde GNS3 podés importar imágenes como <code>.ios</code>, <code>.qcow2</code>, etc.
+        </li>
+      </ol>
+    </section>
+  </main>
 
-  <h3>🖥️ Comandos útiles dentro de la GNS3 VM</h3>
-  <pre><code>sudo apt update
-sudo apt upgrade
-uname -r
-</code></pre>
+  <div data-include="footer"></div>
 
-  <hr>
-
-  <h3 style="color:#a94442;">🔒 Recomendación</h3>
-  <p>
-    Usá la GNS3 VM en redes privadas o entornos cerrados. No se recomienda exponerla directamente a Internet.
-  </p>
-</section>
+  <script src="assets/js/scripts.js"></script>
+</body>
+</html>
