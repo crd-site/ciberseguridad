@@ -14,9 +14,12 @@ body {
   color: #f0f0f0;
   background: url('../img/fondo.png') no-repeat center center fixed;
   background-size: cover;
+  background-attachment: fixed;
+  min-height: 100vh;
   position: relative;
   z-index: 0;
 }
+
 
 /* Capa oscura encima del fondo para mejor contraste */
 body::before {
