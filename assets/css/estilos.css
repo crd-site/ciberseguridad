@@ -5,13 +5,17 @@
   box-sizing: border-box;
 }
 
-html, body {
+html {
   height: 100%;
+}
+
+body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   font-family: 'Segoe UI', sans-serif;
   background-color: #1e1e1e;
   color: #f0f0f0;
-  display: flex;
-  flex-direction: column;
 }
 
 /* --- HEADER / NAVBAR --- */
@@ -94,15 +98,4 @@ ul.columns-2 {
   ul.columns-2 {
     columns: 1;
   }
-}
-
-/* Asegura que el footer se mantenga al fondo incluso si el contenido es corto */
-html, body {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-main {
-  flex: 1;
 }
