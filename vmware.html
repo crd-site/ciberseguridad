@@ -2,56 +2,88 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Instalación de VMware - Guía Técnica</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
-  <style>
-    body {
-      background-color: #121212;
-      color: #f0f0f0;
-      font-family: 'Roboto', sans-serif;
-      padding: 2em;
-    }
-    h1 {
-      color: #ffcc80;
-    }
-    .fecha {
-      font-size: 1.2em;
-      color: #80cbc4;
-    }
-    a {
-      color: #4fc3f7;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-  </style>
+  <title>Guía VMware Workstation | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
 </head>
 <body>
-  <h1>Instalación de VMware</h1>
-  
-<nav style="margin-bottom: 1.5em;">
-  <a href="index.html" style="margin-right: 15px;">🏠 Inicio</a>
-  <a href="vmware.html" style="margin-right: 15px;">💻 VMware</a>
-  <a href="gns3.html">📡 GNS3</a>
-</nav>
+  <main>
+    <div class="aviso-etico">
+      🛡️ <strong>Uso educativo y ético:</strong> Este sitio fue desarrollado exclusivamente para fines académicos en el área de <strong>ciberseguridad</strong>. Todo el contenido se utiliza en un entorno controlado, con propósitos <strong>formativos</strong> guiados por el docente <strong>Chrystian Ruiz Díaz</strong>. Como parte del aprendizaje, se introduce el <strong>modelado de amenazas</strong> para desarrollar una <strong>mentalidad crítica</strong> hacia la seguridad, enseñando a los estudiantes a analizar los sistemas desde la perspectiva de un <strong>posible atacante</strong> con el fin de anticipar y prevenir riesgos. Lejos de constituir una guía para <strong>prácticas ilegales</strong>, este enfoque busca precisamente formar <strong>profesionales conscientes</strong>, capaces de pensar como un atacante para <strong>proteger mejor los sistemas</strong>.
+    </div>
 
-  <div class="contenido">
-    
-        <h2>1. Descarga</h2>
-        <p>Accedé a <a href='https://support.broadcom.com/group/ecx/downloads' target='_blank'>Broadcom Downloads</a> y seleccioná VMware Workstation.</p>
-        <h2>2. Instalación</h2>
-        <p>Ejecutá el instalador y seguí los pasos por defecto. Aceptá la licencia.</p>
-        
-  </div>
-  <p class="fecha">📅 Fecha actual: <span id="fecha"></span></p>
-  <script>
-    const ahora = new Date();
-    const opciones = {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    };
-    document.getElementById("fecha").textContent = ahora.toLocaleString("es-PY", opciones);
-  </script>
+    <h1>🖥️ Guía de instalación de VMware Workstation Pro (versión gratuita para uso personal)</h1>
+
+    <p><strong>📄 Documentación oficial:</strong> <a href="https://support.broadcom.com" target="_blank">Portal de soporte Broadcom</a></p>
+    <p>💡 Para sistemas Windows y Linux se utiliza <strong>VMware Workstation Pro</strong>. Para sistemas macOS, el producto equivalente es <strong>VMware Fusion</strong>.</p>
+
+    <hr>
+
+    <h2>🔐 1. Registro en el portal Broadcom</h2>
+    <ul>
+      <li>Ingresá al portal oficial de Broadcom: <a href="https://support.broadcom.com" target="_blank">https://support.broadcom.com</a></li>
+      <li>Creá una cuenta gratuita o iniciá sesión si ya tenés una.</li>
+      <li>Desde tu cuenta, accedé al apartado de productos para localizar <strong>VMware Workstation</strong>.</li>
+    </ul>
+
+    <hr>
+
+    <h2>📥 2. Descarga del instalador</h2>
+    <ul>
+      <li>Navegá en el portal Broadcom hasta la sección de descargas de <strong>VMware Workstation Pro</strong>.</li>
+      <li>Seleccioná la versión adecuada según tu sistema operativo (Windows o Linux).</li>
+      <li>⚠️ Ya no es necesario descargar VMware Player: la versión Workstation Pro es gratuita para uso personal.</li>
+    </ul>
+
+    <hr>
+
+    <h2>⚙️ 3. Instalación</h2>
+    <ol>
+      <li>Ejecutá el instalador descargado.</li>
+      <li>Seleccioná las opciones por defecto y aceptá los términos de licencia.</li>
+      <li>Finalizá la instalación. Es posible que se te solicite reiniciar el sistema.</li>
+    </ol>
+
+    <hr>
+
+    <h2>🧪 4. Prueba de funcionamiento</h2>
+<ul>
+  <li>Abrí VMware Workstation desde el menú de inicio.</li>
+  <li>Probá el funcionamiento importando o creando una máquina virtual:</li>
+</ul>
+
+<div class="formato-vm">
+  <p><code>.ova</code><br>
+  <strong>Formato empaquetado</strong> que contiene la configuración completa de una VM.<br>
+  Se usa para importar máquinas preconfiguradas.<br>
+  <em>Ejemplo:</em> una imagen de Kali Linux descargada desde el sitio oficial.</p>
+
+  <p><code>.vmx</code><br>
+  <strong>Archivo de configuración</strong> de una VM existente.<br>
+  Se usa cuando se abre una carpeta que ya contiene todos los archivos de una máquina virtual.<br>
+  <em>Ejemplo:</em> seleccionar el archivo desde una carpeta extraída.</p>
+
+  <p><code>.iso</code><br>
+  <strong>Imagen de disco</strong> usada para instalar un sistema operativo desde cero dentro de una nueva VM.<br>
+  <em>Ejemplo:</em> instalar Ubuntu, Windows o Debian manualmente.</p>
+</div>
+
+<ul>
+  <li>Encendé la máquina virtual para verificar que funcione correctamente.</li>
+</ul>
+
+
+    <hr>
+
+    <h2>🎯 5. Recomendaciones finales</h2>
+    <ul>
+      <li>Leé siempre la documentación oficial: <a href="https://support.broadcom.com" target="_blank">Portal de soporte Broadcom</a>.</li>
+      <li>Consultá los foros de la comunidad para resolver dudas frecuentes.</li>
+      <li>Verificá periódicamente si hay actualizaciones del software.</li>
+    </ul>
+
+  </main>
+  <div data-include="footer"></div>
+  <script src="assets/js/scripts.js"></script>
 </body>
 </html>

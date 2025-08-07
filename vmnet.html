@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Redes virtuales VMnet en VMware | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+<main>
+
+  <div class="aviso-etico">
+      🛡️ <strong>Uso educativo y ético:</strong> Este sitio fue desarrollado exclusivamente para fines académicos en el área de <strong>ciberseguridad</strong>. Todo el contenido se utiliza en un entorno controlado, con propósitos <strong>formativos</strong> guiados por el docente <strong>Chrystian Ruiz Díaz</strong>. Como parte del aprendizaje, se introduce el <strong>modelado de amenazas</strong> para desarrollar una <strong>mentalidad crítica</strong> hacia la seguridad, enseñando a los estudiantes a analizar los sistemas desde la perspectiva de un <strong>posible atacante</strong> con el fin de anticipar y prevenir riesgos. Lejos de constituir una guía para <strong>prácticas ilegales</strong>, este enfoque busca precisamente formar <strong>profesionales conscientes</strong>, capaces de pensar como un atacante para <strong>proteger mejor los sistemas</strong>.
+    </div>
+
+  <h1>🌐 Redes virtuales VMnet en VMware Workstation</h1>
+
+  <p><strong>📄 Documentación oficial:</strong> <a href="https://support.broadcom.com" target="_blank">Portal de soporte Broadcom</a></p>
+
+  <hr>
+
+  <h2>⚙️ ¿Qué es VMnet?</h2>
+  <p><strong>VMnet</strong> es la designación que usa VMware para referirse a sus interfaces virtuales de red, las cuales permiten a las máquinas virtuales (VMs) comunicarse entre sí, con el host físico o con redes externas.</p>
+
+  <hr>
+
+  <h2>🧠 ¿Dónde se configuran los VMnet?</h2>
+  <p>Desde la aplicación <strong>Virtual Network Editor</strong>:</p>
+  <ul>
+    <li>Acceso: <code>Edit → Virtual Network Editor</code></li>
+    <li>Permite gestionar VMnet0, VMnet1, VMnet8 y redes personalizadas (VMnet2 a VMnet19).</li>
+    <li>Podés configurar DHCP, rangos IP, gateways, tipo de conexión (Bridge/NAT/Host-Only) y restaurar valores por defecto.</li>
+  </ul>
+
+  <hr>
+
+  <h2>🔌 Modos de red disponibles</h2>
+
+  <h3>🔁 Bridge (VMnet0)</h3>
+  <ul>
+    <li>La VM accede directamente a la red física como si fuera un equipo más.</li>
+    <li>Recibe IP del router o servidor DHCP real.</li>
+    <li>Ideal para laboratorios que necesitan visibilidad en la red real.</li>
+    <li>Opción “Replicate physical network connection state” permite simular reconexiones.</li>
+  </ul>
+
+  <h3>🌐 NAT (VMnet8)</h3>
+  <ul>
+    <li>La VM accede a Internet a través del host mediante traducción de direcciones.</li>
+    <li>Está en una red virtual privada (no accesible desde la red física).</li>
+    <li>Recomendado para navegación segura sin exposición.</li>
+  </ul>
+
+  <h3>🔒 Host-Only (VMnet1)</h3>
+  <ul>
+    <li>La VM solo se comunica con el host.</li>
+    <li>No hay acceso a Internet ni a otras redes.</li>
+    <li>Ideal para pruebas aisladas, malware, sandbox.</li>
+  </ul>
+
+  <h3>🧩 Redes personalizadas (VMnet2 a VMnet19)</h3>
+  <ul>
+    <li>Podés crear redes virtuales específicas para distintos propósitos o topologías complejas.</li>
+    <li>Se asignan manualmente desde Virtual Network Editor.</li>
+  </ul>
+
+  <hr>
+
+  <h2>💡 Interfaces creadas en el host</h2>
+  <p>Cuando se instala VMware Workstation, el sistema host crea interfaces de red visibles como:</p>
+  <ul>
+    <li><code>VMware Network Adapter VMnet1</code> (Host-Only)</li>
+    <li><code>VMware Network Adapter VMnet8</code> (NAT)</li>
+  </ul>
+  <p>Estas interfaces aparecen en el panel de control de Windows como adaptadores de red. Cada una tiene su configuración IP, gateway y reglas de firewall propias.</p>
+
+  <hr>
+
+  <h2>📊 Comparación general</h2>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Modo</th>
+        <th>Acceso a Internet</th>
+        <th>Comunicación con el host</th>
+        <th>Visible en la red física</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Bridge</td>
+        <td>✅</td>
+        <td>✅</td>
+        <td>✅</td>
+      </tr>
+      <tr>
+        <td>NAT</td>
+        <td>✅</td>
+        <td>✅</td>
+        <td>❌</td>
+      </tr>
+      <tr>
+        <td>Host-Only</td>
+        <td>❌</td>
+        <td>✅</td>
+        <td>❌</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>🎯 Recomendaciones finales</h2>
+  <ul>
+    <li>Usá <strong>NAT</strong> si necesitás conexión a Internet sin complicaciones.</li>
+    <li>Usá <strong>Host-Only</strong> para entornos de pruebas totalmente aislados.</li>
+    <li>Usá <strong>Bridge</strong> si necesitás que la VM interactúe con la red real.</li>
+    <li>Definí redes personalizadas si trabajás con múltiples VMs, GNS3 u otras topologías complejas.</li>
+  </ul>
+
+</main>
+<div data-include="footer"></div>
+<script src="assets/js/scripts.js"></script>
+</body>
+</html>

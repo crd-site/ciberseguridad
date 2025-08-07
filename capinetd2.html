@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía CTF D2 – CapiNET | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+<main>
+
+  <div class="aviso-etico">
+    🛡️ <strong>Uso educativo y ético:</strong> Este sitio fue desarrollado exclusivamente para fines académicos en el área de <strong>ciberseguridad</strong>. Todo el contenido se utiliza en un entorno controlado, con propósitos <strong>formativos</strong> guiados por el docente <strong>Chrystian Ruiz Díaz</strong>. Como parte del aprendizaje, se introduce el <strong>modelado de amenazas</strong> para desarrollar una <strong>mentalidad crítica</strong> hacia la seguridad, enseñando a los estudiantes a analizar los sistemas desde la perspectiva de un <strong>posible atacante</strong> con el fin de anticipar y prevenir riesgos. Lejos de constituir una guía para <strong>prácticas ilegales</strong>, este enfoque busca precisamente formar <strong>profesionales conscientes</strong>, capaces de pensar como un atacante para <strong>proteger mejor los sistemas</strong>.
+  </div>
+
+  <h1>✅ Guía Desafío: D2 - Exposición Pública de Servicios</h1>
+
+  <h2>🛡️ Objetivo del desafío</h2>
+  <p>Este reto, disponible en el entorno de entrenamiento <strong>CapiNET</strong>, simula una situación real donde un archivo de configuración sensible fue dejado expuesto públicamente en el servidor web.</p>
+  <p>Tu tarea como estudiante es asumir el rol de un <strong>auditor de ciberseguridad</strong> o investigador y encontrar la <strong>flag</strong> y completar el desafío en CapiNET, empleando habilidades básicas de reconocimiento, navegación y análisis en sitios web mal configurados.</p>
+
+  <hr>
+
+  <h2>🌐 Acceso al entorno</h2>
+  <ul>
+    <li><strong>Servidor CapiNET:</strong> <a href="http://68.233.123.96/" target="_blank">http://68.233.123.96/</a></li>
+    <li><strong>Desafío:</strong> “D2 - Exposición Pública de Servicios”</li>
+    <li><strong>Modalidad:</strong> entorno simulado en red controlada para prácticas de hacking ético.</li>
+  </ul>
+
+  <hr>
+
+  <h2>🧠 Parte 1: Lo que ve el usuario común</h2>
+  <p>Cuando accedés al sitio web, encontrarás una página aparentemente simple o genérica.</p>
+  <p>Este tipo de páginas pueden parecer inofensivas, pero esconden a menudo errores como:</p>
+  <ul>
+    <li>Directorios sin protección (listado de carpetas o archivos accesibles).</li>
+    <li>Archivos mal subidos con información sensible, por ejemplo: <code>.env, config.php, backup.zip</code></li>
+    <li>Estructuras mal configuradas del servidor web.</li>
+  </ul>
+
+  <hr>
+
+  <h2>🧪 Parte 2: Herramientas del navegador (modo desarrollador)</h2>
+  <p>Para investigar el sitio web, usá el <strong>modo desarrollador</strong> del navegador (Chrome, Edge, Firefox).</p>
+  <ol>
+    <li>Abrí el navegador y accedé al sitio.</li>
+    <li>Presioná <code>F12 o clic derecho → <strong>Inspeccionar</strong></code></li>
+    <li>Explorá las siguientes pestañas:</li>
+    <ul>
+      <li><strong>Elements / Inspector:</strong> estructura HTML completa del sitio.</li>
+      <li><strong>Network:</strong> carga de recursos (puede revelar rutas ocultas).</li>
+      <li><strong>Sources:</strong> carpetas internas y scripts.</li>
+      <li><strong>Console:</strong> errores o advertencias del sitio.</li>
+    </ul>
+  </ol>
+
+  <hr>
+
+  <h2>🔓 Parte 3: Técnicas de reconocimiento manual</h2>
+  <p>Además del modo desarrollador, probá rutas manualmente desde la barra del navegador. Esto forma parte del proceso de <strong>fuerza bruta semántica</strong>, es decir, intentar acceder a rutas conocidas o comunes:</p>
+
+  <pre>
+http://68.233.123.96/.env
+http://68.233.123.96/backup/
+http://68.233.123.96/config.php
+http://68.233.123.96/.git/config
+  </pre>
+
+  <p><strong>Indicadores positivos:</strong></p>
+  <ul>
+    <li>Archivos que se abren como texto plano.</li>
+    <li>Variables como <code>APP_KEY, DB_PASSWORD, SECRET_KEY</code>.</li>
+    <li>Archivos <code>.zip</code> descargables que contienen configuraciones.</li>
+  </ul>
+
+  <hr>
+
+  <h2>🏁 ¿Cómo se ve la flag?</h2>
+  <p>Las flags suelen tener este formato:</p>
+  <pre>flag{informacion_sensible_encontrada}</pre>
+  <p>Si encontrás un archivo visible con configuraciones, exploralo bien hasta detectar la flag. Puede estar al inicio, en un comentario, o al final del contenido del archivo.</p>
+
+  <hr>
+
+  <h2>🧠 Consejo educativo</h2>
+  <p>Este desafío está diseñado para enseñarte:</p>
+  <ul>
+    <li>La importancia de proteger rutas internas del servidor web.</li>
+    <li>La gravedad de exponer archivos de configuración.</li>
+    <li>La aplicación de principios de reconocimiento pasivo y activo.</li>
+  </ul>
+  <p>En contextos reales, esto puede causar <strong>fugas de credenciales</strong>, <strong>accesos indebidos</strong> a bases de datos, o incluso <strong>tomas de control del servidor</strong>.</p>
+
+  <hr>
+
+  <h2>🎯 Buenas prácticas (omitidas en este entorno a propósito)</h2>
+  <ul>
+    <li>Bloquear rutas sensibles en el <code>.htaccess</code></li>
+    <li>Nunca subir archivos a la raíz del sitio como: <code>.env o backups</code> </li>
+    <li>Hacer despliegue seguro con validaciones y monitoreo.</li>
+  </ul>
+
+</main>
+<div data-include="footer"></div>
+<script src="assets/js/scripts.js"></script>
+</body>
+</html>
