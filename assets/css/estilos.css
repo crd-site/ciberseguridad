@@ -10,28 +10,26 @@ html, body {
 }
 
 body {
+  background: url('/ciberseguridad/assets/img/fondo.png') no-repeat center center fixed;
+  background-size: cover;
   font-family: 'Segoe UI', sans-serif;
   color: #f0f0f0;
-  background: url('../img/fondo.png') no-repeat center center fixed;
-  background-size: cover;
-  background-attachment: fixed;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   position: relative;
   z-index: 0;
 }
 
-
-/* Capa oscura encima del fondo para mejor contraste */
 body::before {
   content: "";
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.7); /* oscurece el fondo */
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.7);
   z-index: -1;
 }
+
 
 /* Contenido principal */
 main {
