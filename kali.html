@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía: Descarga e Instalación de Kali Linux para VMware | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+<main>
+  <div class="aviso-etico">
+    🛡️ <strong>Uso educativo y ético:</strong> Este sitio fue desarrollado exclusivamente para fines académicos en el área de <strong>ciberseguridad</strong>. Todo el contenido se utiliza en un entorno controlado, con propósitos <strong>formativos</strong> guiados por el docente <strong>Chrystian Ruiz Díaz</strong>. Como parte del aprendizaje, se introduce el <strong>modelado de amenazas</strong> para desarrollar una <strong>mentalidad crítica</strong> hacia la seguridad, enseñando a los estudiantes a analizar los sistemas desde la perspectiva de un <strong>posible atacante</strong> con el fin de anticipar y prevenir riesgos. Lejos de constituir una guía para <strong>prácticas ilegales</strong>, este enfoque busca precisamente formar <strong>profesionales conscientes</strong>, capaces de pensar como un atacante para <strong>proteger mejor los sistemas</strong>.
+  </div>
+
+  <h1>✅ Guía: Descarga e Instalación de Kali Linux para VMware</h1>
+
+  <p><strong>📄 Documentación oficial:</strong> <a href="https://www.kali.org/docs/" target="_blank">https://www.kali.org/docs/</a></p>
+
+  <hr>
+
+  <h2>🤭 Propósito de esta guía</h2>
+  <p>Esta guía te enseña a descargar, importar y comenzar a utilizar <strong>Kali Linux en VMware Workstation</strong>, utilizando la imagen preconfigurada para laboratorios de ciberseguridad. También se explican las diferencias entre los formatos <code>.ova, .vmx y .iso</code></p>
+
+  <hr>
+
+  <h2>🌐 Sitio de descarga oficial</h2>
+  <p><a href="https://www.kali.org/" target="_blank">https://www.kali.org</a></p>
+
+  <hr>
+
+  <h2>🧰 Paso 1: Descargar Kali para VMware</h2>
+  <ol>
+    <li>Ingresá al sitio web <a href="https://www.kali.org" target="_blank">https://www.kali.org</a></li>
+    <li>Hacé clic en <strong>"Download"</strong></li>
+    <li>Bajá hasta la sección <strong>Virtual Machines</strong></li>
+    <li>Seleccioná <strong>Kali Linux VMware 64-bit</strong></li>
+    <li>Descargá el archivo <code>.7z</code> (imagen comprimida)</li>
+    <li>Verificá el hash SHA256 (opcional)</li>
+  </ol>
+
+  <hr>
+
+  <h2>📆 Paso 2: Extraer el archivo .7z</h2>
+  <ul>
+    <li>Usá <strong>7-Zip</strong> o <strong>WinRAR</strong></li>
+    <li>Extraé el contenido en una carpeta</li>
+    <li>Verás archivos como:
+      <ul>
+        <li><code>Kali-Linux-2025.vmx</code></li>
+        <li><code>.vmdk</code> (disco virtual)</li>
+      </ul>
+    </li>
+  </ul>
+
+  <hr>
+
+  <h2>⚙️ Paso 3: Importar en VMware</h2>
+  <ol>
+    <li>Abrí <strong>VMware Workstation</strong></li>
+    <li>Menu: <strong>File → Open</strong></li>
+    <li>Seleccioná el archivo <code>.vmx</code> desde la carpeta extraída</li>
+    <li>Asigná un nombre y hacé clic en <strong>Finish</strong></li>
+  </ol>
+
+  <hr>
+
+  <h2>🚀 Paso 4: Primer uso</h2>
+  <ol>
+    <li>Iniciá la VM: <strong>Power on this virtual machine</strong></li>
+    <li>Credenciales por defecto:
+      <ul>
+        <li><strong>Usuario:</strong> kali</li>
+        <li><strong>Contraseña:</strong> kali</li>
+      </ul>
+    </li>
+    <li>Explorá el sistema o abrí una terminal</li>
+  </ol>
+
+  <hr>
+
+  <h2>💡 Diferencias entre .vmx, .ova y .iso</h2>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Formato</th>
+        <th>Descripción</th>
+        <th>Cuándo usarlo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>.vmx</td>
+        <td>Archivo de configuración de VM</td>
+        <td>✅ Recomendado para VMware</td>
+      </tr>
+      <tr>
+        <td>.ova</td>
+        <td>Plantilla exportada para múltiples entornos</td>
+        <td>✅ Ideal para importar en otros hipervisores</td>
+      </tr>
+      <tr>
+        <td>.iso</td>
+        <td>Imagen para instalar desde cero</td>
+        <td>✅ Para instalaciones personalizadas</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>🧠 Consejos para estudiantes</h2>
+  <ul>
+    <li>Podés ajustar RAM y CPU desde <em>Edit virtual machine settings</em></li>
+    <li>Verificá que la red esté en modo NAT o Bridge</li>
+    <li>Tomá snapshots antes de hacer pruebas avanzadas</li>
+  </ul>
+
+</main>
+<div data-include="footer"></div>
+<script src="assets/js/scripts.js"></script>
+</body>
+</html>
