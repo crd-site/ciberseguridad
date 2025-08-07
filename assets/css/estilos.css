@@ -10,7 +10,7 @@ html, body {
 }
 
 body {
-  background: url('/ciberseguridad/assets/img/fondo.png') no-repeat center center fixed;
+  background: url('https://crd-site.github.io/ciberseguridad/assets/img/fondo.png') no-repeat center center fixed;
   background-size: cover;
   font-family: 'Segoe UI', sans-serif;
   color: #f0f0f0;
