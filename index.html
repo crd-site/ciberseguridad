@@ -2,89 +2,21 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Descarga VM - WinSevenUltimate</title>
-  <link rel="stylesheet" href="estilos.css">
+  <title>Inicio | Mi Sitio Web</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
 </head>
 <body>
-  <div class="contenedor-vm">
-    <h2>🖥️ Descarga e instalación de la máquina virtual <em>"WinSevenUltimate"</em></h2>
+  <div data-include="header"></div>
 
-    <p><strong>🔗 Enlace de descarga:</strong></p>
-    <p>
-      📥 <a href="https://onedrive.live.com/XXXXXXXXX" target="_blank">Haz clic aquí para descargar la máquina virtual</a><br>
-      <em>(Archivo comprimido: <code>Win7_x64_86.zip</code>, tamaño aproximado: 7 GB)</em><br>
-      <strong>Contraseña (si aplica):</strong> <code>ciberseguridad2025</code>
-    </p>
+  <main>
+    <h1>Bienvenida/o al sitio</h1>
+    <p>Este es el punto de partida. Desde aquí podés acceder a las distintas secciones.</p>
+  </main>
 
-    <hr>
+  <div data-include="footer"></div>
 
-    <h3>📂 Pasos para instalar la VM</h3>
-
-    <ol>
-      <li><strong>Descargar y descomprimir</strong>
-        <ul>
-          <li>Instalá <a href="https://www.7-zip.org/" target="_blank">7-Zip</a> o usá WinRAR</li>
-          <li>Extraé el archivo: <code>7-Zip &gt; Extraer en 'Win7_x64_86\'</code></li>
-          <li>Esperá a que finalice la extracción</li>
-        </ul>
-      </li>
-
-      <li><strong>Abrir la máquina virtual en VMware</strong>
-        <ul>
-          <li>Abrí <strong>VMware Workstation</strong> o <strong>VMware Player</strong></li>
-          <li>Elegí <code>Open a Virtual Machine</code></li>
-          <li>Seleccioná <code>WinSevenUltimate.vmx</code></li>
-          <li>Cuando aparezca el mensaje:
-            <blockquote><em>This virtual machine might have been moved or copied</em></blockquote>
-            Hacé clic en: <strong>"I Copied It"</strong>
-          </li>
-        </ul>
-      </li>
-
-      <li><strong>Iniciar sesión</strong>
-        <ul>
-          <li>Usuario: <code>Admin</code></li>
-          <li>Contraseña: <em>dejar en blanco (solo presionar Enter)</em></li>
-        </ul>
-      </li>
-    </ol>
-
-    <hr>
-
-    <h3>💾 Requisitos mínimos</h3>
-    <ul>
-      <li>CPU con virtualización activada (VT-x / AMD-V)</li>
-      <li>4 GB de RAM libres (recomendado: 8 GB)</li>
-      <li>20 GB de espacio libre en disco</li>
-      <li>VMware instalado (<a href="https://www.vmware.com/products/workstation-player.html" target="_blank">descargar Player gratuito</a>)</li>
-    </ul>
-
-    <hr>
-
-    <h3>📦 Software preinstalado</h3>
-    <ul style="columns:2;">
-      <li>Wireshark</li>
-      <li>Nmap / Zenmap</li>
-      <li>OpenVPN GUI</li>
-      <li>SSH Secure Shell</li>
-      <li>Nessus Web Client</li>
-      <li>Mozilla Firefox</li>
-      <li>Microsoft Office</li>
-      <li>Notepad++</li>
-      <li>MBSA</li>
-      <li>WSDigger</li>
-      <li>Packet Tracer</li>
-      <li>Zoiper Free</li>
-    </ul>
-
-    <hr>
-
-    <h3 class="etica">🔒 Advertencia ética</h3>
-    <p>
-      Esta máquina virtual fue diseñada exclusivamente con fines educativos y debe utilizarse solo en laboratorios controlados o entornos autorizados.
-      <br><br>
-      ⚠️ <strong>Está prohibido usarla para pruebas en redes reales o con fines no éticos.</strong>
-    </p>
-  </div>
+  <script src="assets/js/scripts.js"></script>
 </body>
 </html>
+
