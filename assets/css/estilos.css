@@ -138,7 +138,7 @@ hr {
 body::after {
   content: "Uso exclusivo en laboratorio controlado\AProhibida su reproducción sin autorización";
   position: fixed;
-  top: 58%;
+  top: 64%;
   left: 50%;
   transform: translate(-50%, -50%); /* sin rotación */
   font-size: 2rem;
