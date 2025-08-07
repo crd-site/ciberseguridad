@@ -5,28 +5,19 @@
   box-sizing: border-box;
 }
 
-html {
+html, body {
   height: 100%;
-}
-
-body {
-  height: 100%;
+  font-family: 'Segoe UI', sans-serif;
+  background: url('../img/fondo.png') no-repeat center center fixed;
+  background-size: cover;
+  color: #f0f0f0;
   display: flex;
   flex-direction: column;
-  font-family: 'Segoe UI', sans-serif;
-  background-color: #1e1e1e;
-  background-image: url('../img/fondo.png'); /* Ajustá esta ruta según dónde esté tu imagen */
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed; /* Opcional: mantiene el fondo fijo */
-  color: #f0f0f0;
 }
-
 
 /* --- HEADER / NAVBAR --- */
 header {
-  background-color: #111;
+  background-color: rgba(17, 17, 17, 0.9);
   padding: 15px 20px;
   display: flex;
   justify-content: center;
@@ -51,14 +42,14 @@ main {
   max-width: 900px;
   margin: 30px auto;
   padding: 20px;
-  background-color: #2a2a2a;
+  background-color: #000; /* negro sólido */
   border-radius: 12px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  box-shadow: 0 0 10px rgba(0,0,0,0.6);
 }
 
 /* --- FOOTER --- */
 footer {
-  background-color: #111;
+  background-color: rgba(17, 17, 17, 0.9);
   color: #aaa;
   text-align: center;
   padding: 15px 20px;
@@ -70,14 +61,6 @@ h1, h2, h3 {
   color: #00bfff;
 }
 
-code {
-  background-color: #333;
-  color: #ffd700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-}
-
 a {
   color: #66ccff;
 }
@@ -86,7 +69,16 @@ a:hover {
   text-decoration: underline;
 }
 
-/* --- Listas con columnas (opcional para software instalado, etc.) */
+code, pre {
+  background-color: #333;
+  color: #ffd700;
+  padding: 8px;
+  border-radius: 6px;
+  display: block;
+  overflow-x: auto;
+  font-family: 'Courier New', monospace;
+}
+
 ul.columns-2 {
   columns: 2;
   gap: 40px;
@@ -94,7 +86,6 @@ ul.columns-2 {
   margin-left: 20px;
 }
 
-/* Responsive para móviles */
 @media (max-width: 768px) {
   main {
     margin: 20px 10px;
@@ -104,14 +95,4 @@ ul.columns-2 {
   ul.columns-2 {
     columns: 1;
   }
-}
-
-pre, code {
-  background-color: #333;
-  color: #ffd700;
-  padding: 8px;
-  border-radius: 6px;
-  display: block;
-  overflow-x: auto;
-  font-family: 'Courier New', monospace;
 }
