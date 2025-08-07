@@ -93,8 +93,8 @@ pre, code {
 
 h1, h2, h3 {
   color: #00bfff;
-  margin-top: 3rem;
-  margin-bottom: 4rem;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
 }
 
 p, ul, ol {
@@ -104,6 +104,6 @@ hr {
   border: 0;
   height: 1px;
   background: #00bfff;
-  margin: 4rem 0;
+  margin: 2rem 0;
   opacity: 0.5;
 }
