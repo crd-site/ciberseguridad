@@ -100,3 +100,10 @@ h1, h2, h3 {
 p, ul, ol {
   margin-bottom: 1rem;
 }
+hr {
+  border: 0;
+  height: 1px;
+  background: #00bfff;
+  margin: 2rem 0;
+  opacity: 0.5;
+}
