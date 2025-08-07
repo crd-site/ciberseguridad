@@ -95,3 +95,14 @@ ul.columns-2 {
     columns: 1;
   }
 }
+
+/* Asegura que el footer se mantenga al fondo incluso si el contenido es corto */
+html, body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
