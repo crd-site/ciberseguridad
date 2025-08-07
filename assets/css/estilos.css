@@ -5,13 +5,17 @@
   box-sizing: border-box;
 }
 
-html, body {
+html {
   height: 100%;
+}
+
+body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   font-family: 'Segoe UI', sans-serif;
   background-color: #1e1e1e;
   color: #f0f0f0;
-  display: flex;
-  flex-direction: column;
 }
 
 /* --- HEADER / NAVBAR --- */
@@ -76,7 +80,7 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Listas con columnas (opcional para listas de software, etc.) */
+/* --- Listas con columnas (opcional para software instalado, etc.) */
 ul.columns-2 {
   columns: 2;
   gap: 40px;
@@ -95,6 +99,7 @@ ul.columns-2 {
     columns: 1;
   }
 }
+
 
 
 
