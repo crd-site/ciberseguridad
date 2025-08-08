@@ -15,17 +15,42 @@
 
   <h1>🌐 Redes virtuales VMnet en VMware Workstation</h1>
 
+  <h2>📘 ¿Qué es Virtual Network Editor?</h2>
+<p>
+  <strong>Virtual Network Editor</strong> es una herramienta integrada en <strong>VMware Workstation Pro</strong> que permite configurar y personalizar las redes virtuales utilizadas por las máquinas virtuales (VMs).
+</p>
+<p>
+  A través de esta herramienta, se pueden crear, modificar o eliminar adaptadores virtuales (VMnet) que conectan las VMs entre sí, con el host físico o con redes externas. Es fundamental para definir topologías seguras, segmentadas o controladas dentro de laboratorios de ciberseguridad.
+</p>
+<p>
+  Al permitir un control detallado sobre rangos IP, servicios DHCP, comportamientos de NAT y bridge, <strong>Virtual Network Editor</strong> ofrece un entorno realista para simular redes corporativas, ataques internos o entornos aislados.
+</p>
+
+<h2>🌐 ¿Qué es VMnet?</h2>
+<p>
+  <strong>VMnet</strong> es la denominación que usa VMware para referirse a las interfaces virtuales de red utilizadas por las VMs. Cada red VMnet representa una red virtual distinta, que puede ser:
+</p>
+<ul>
+  <li><strong>VMnet0:</strong> Bridge – conecta la VM a la red física.</li>
+  <li><strong>VMnet1:</strong> Host-Only – solo conecta la VM con el host.</li>
+  <li><strong>VMnet8:</strong> NAT – permite acceso a Internet a través del host.</li>
+  <li><strong>VMnet2 a VMnet19:</strong> Redes personalizadas definidas por el usuario.</li>
+</ul>
+<p>
+  Estas redes permiten simular entornos complejos de manera aislada, segura y flexible, algo esencial en prácticas de análisis forense, pentesting, configuración de firewalls, servicios simulados, etc.
+</p>
+
+
   <p><strong>📄 Documentación oficial:</strong> <a href="https://support.broadcom.com" target="_blank">Portal de soporte Broadcom</a></p>
 
   <hr>
 
-  <h2>⚙️ ¿Qué es VMnet?</h2>
-  <p><strong>VMnet</strong> es la designación que usa VMware para referirse a sus interfaces virtuales de red, las cuales permiten a las máquinas virtuales (VMs) comunicarse entre sí, con el host físico o con redes externas.</p>
+  
 
   <hr>
 
   <h2>🧠 ¿Dónde se configuran los VMnet?</h2>
-  <p>Desde la aplicación <strong>Virtual Network Editor</strong>:</p>
+  <p>Desde la aplicación <strong>VMWare Workstation</strong>:</p>
   <ul>
     <li>Acceso: <code>Edit → Virtual Network Editor</code></li>
     <li>Permite gestionar VMnet0, VMnet1, VMnet8 y redes personalizadas (VMnet2 a VMnet19).</li>
