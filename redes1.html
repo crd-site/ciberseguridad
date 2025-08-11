@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Fundamentos Básicos de Redes | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+  <main>
+    <!-- Aviso ético (sin modificar) -->
+    <div class="aviso-etico">
+      🛡️ <strong>Uso educativo y ético:</strong> Este material fue elaborado exclusivamente con fines académicos para el área de <strong>ciberseguridad</strong>. Todo el contenido se utiliza en un entorno controlado, con propósitos <strong>formativos</strong> guiados por el docente. Como parte del aprendizaje, se introduce el <strong>modelado de amenazas</strong> para desarrollar una <strong>mentalidad crítica</strong> hacia la seguridad, enseñando a los estudiantes a analizar sistemas desde la perspectiva de un <strong>posible atacante</strong> con el fin de anticipar y prevenir riesgos. Lejos de constituir una guía para <strong>prácticas ilegales</strong>, este enfoque busca formar <strong>profesionales conscientes</strong>, capaces de pensar como un atacante para <strong>proteger mejor los sistemas</strong>.
+    </div>
+
+    <h1>📡 Fundamentos Básicos de Redes</h1>
+
+    <h2>🧪 Comprobación de configuración de red (Windows y Linux)</h2>
+    <p>Antes de aprender los conceptos, es útil saber cómo consultar la configuración de red.</p>
+
+    <h3>🪟 En Windows</h3>
+    <ol>
+      <li>Abrí la terminal (<strong>Win + R</strong> → escribir <code>cmd</code> → Enter).</li>
+      <li>Ejecutá:
+        <pre><code>ipconfig</code></pre>
+        Mostrará la dirección IP, máscara de subred, puerta de enlace predeterminada y otros datos.
+      </li>
+    </ol>
+
+    <h3>🐧 En Linux</h3>
+    <ol>
+      <li>Abrí la terminal.</li>
+      <li>Para ver IP y enlaces:
+        <pre><code>ip addr show</code></pre>
+        o (si usás net-tools):
+        <pre><code>ifconfig</code></pre>
+      </li>
+      <li>Para ver la puerta de enlace:
+        <pre><code>ip route</code></pre>
+      </li>
+    </ol>
+
+    <hr>
+
+    <h2>🔎 Introducción</h2>
+    <p>
+      En ciberseguridad, comprender cómo funcionan las redes es fundamental: no se puede proteger lo que no se entiende. Las redes son el medio por el que viaja la información, y defenderlas implica conocer cómo se identifican los dispositivos, cómo se comunican y qué elementos intervienen en el proceso.
+    </p>
+    <p>
+      Este capítulo, aborda de forma ordenada conceptos como direcciones IP, máscaras de subred, <strong>gateway o puerta de enlace</strong>, protocolos TCP/UDP, tipos de redes (LAN/WAN) y dispositivos esenciales como switches, routers y firewalls. También se explica cómo se administran las direcciones IP, los rangos públicos y privados, y el sistema actual de asignación <strong>CIDR</strong>.
+    </p>
+
+    <hr>
+
+    <h2>🧠 Redes </h2>
+
+    <h3>1) Conceptos básicos de redes</h3>
+
+    <h4>• Dirección IP</h4>
+    <p>
+      <strong>Definición:</strong> Número único que identifica a un dispositivo en una red. Puede ser <strong>IPv4</strong> (32 bits) o <strong>IPv6</strong> (128 bits).<br>
+      <strong>Ejemplo:</strong> <code>192.168.1.25</code>.
+    </p>
+
+    <h4>• Máscara de subred</h4>
+    <p>
+      <strong>Definición:</strong> Número que determina qué parte de la dirección IP corresponde a la red y qué parte al host.<br>
+      <strong>Ejemplo:</strong> <code>255.255.255.0</code> → los tres primeros octetos (<code>192.168.1</code>) son de red y el último (<code>25</code>) identifica al dispositivo.
+    </p>
+
+    <h4>• Gateway o Puerta de Enlace (Default Gateway)</h4>
+    <p>
+      <strong>Definición:</strong> Dispositivo que actúa como punto de salida de una red local hacia otras redes. Si un dispositivo quiere comunicarse con un destino fuera de su subred, envía los datos al gateway. Suele ser un router o un switch de capa 3.<br>
+      <strong>Ejemplo:</strong> En la red <code>192.168.1.0/24</code>, la puerta de enlace <code>192.168.1.1</code> redirige el tráfico hacia Internet.
+    </p>
+    <ul>
+      <li><strong>Debe estar en la misma subred</strong> que los hosts.</li>
+      <li>En redes domésticas, suele ser el router Wi-Fi.</li>
+      <li><strong>Cómo verlo:</strong> Windows → <code>ipconfig</code> (“Puerta de enlace predeterminada”); Linux → <code>ip route</code> (línea <em>default via</em>).</li>
+    </ul>
+
+    <h4>• Dirección de red</h4>
+    <p>
+      <strong>Definición:</strong> Dirección que identifica a toda la red. No puede asignarse a un host.<br>
+      <strong>Ejemplo:</strong> <code>192.168.1.0</code> con máscara <code>255.255.255.0</code>.
+    </p>
+
+    <h4>• Dirección de broadcast</h4>
+    <p>
+      <strong>Definición:</strong> Dirección especial para enviar datos a todos los dispositivos de una red.<br>
+      <strong>Ejemplo:</strong> <code>192.168.1.255</code> en <code>192.168.1.0/24</code>.
+    </p>
+
+    <h4>• IP privadas (RFC 1918)</h4>
+    <p><strong>Definición:</strong> Direcciones reservadas para redes internas, no accesibles desde Internet.</p>
+    <ul>
+      <li><code>10.0.0.0 – 10.255.255.255</code></li>
+      <li><code>172.16.0.0 – 172.31.255.255</code></li>
+      <li><code>192.168.0.0 – 192.168.255.255</code></li>
+    </ul>
+
+    <h4>• IP públicas</h4>
+    <p>
+      <strong>Definición:</strong> Direcciones únicas a nivel global accesibles desde Internet.<br>
+      <strong>Administración:</strong> Gestionadas por IANA y delegadas a los RIR (ARIN, LACNIC, RIPE NCC, APNIC, AFRINIC).<br>
+      <strong>Historia:</strong> Antes se usaban clases A/B/C (en desuso); hoy se usa <strong>CIDR</strong>.<br>
+      <strong>Rango general:</strong> <code>1.0.0.0 – 223.255.255.255</code> (excluye reservadas).
+    </p>
+
+    <h4>• Direcciones reservadas y especiales</h4>
+    <ul>
+      <li>Loopback: <code>127.0.0.0/8</code></li>
+      <li>APIPA: <code>169.254.0.0/16</code></li>
+      <li>Multicast: <code>224.0.0.0 – 239.255.255.255</code></li>
+      <li>Broadcast: <code>255.255.255.255</code></li>
+    </ul>
+
+    <h4>• Wildcard mask</h4>
+    <p>
+      <strong>Definición:</strong> Inverso de la máscara de subred usado en ACL/filtrado.<br>
+      <strong>Ejemplo:</strong> máscara <code>255.255.255.0</code> → wildcard <code>0.0.0.255</code>.
+    </p>
+
+    <hr>
+
+    <h3>2) Resolución de nombres y servicios esenciales</h3>
+
+    <h4>• DNS (Domain Name System)</h4>
+    <p><strong>Definición:</strong> Traduce nombres de dominio legibles por humanos en direcciones IP.</p>
+
+    <h4>• DHCP (Dynamic Host Configuration Protocol)</h4>
+    <p><strong>Definición:</strong> Asigna automáticamente IP y parámetros de red a los dispositivos.</p>
+
+    <hr>
+
+    <h3>3) Protocolos de comunicación</h3>
+
+    <h4>• TCP (Transmission Control Protocol)</h4>
+    <p><strong>Definición:</strong> Orientado a conexión; garantiza entrega y orden.</p>
+
+    <h4>• UDP (User Datagram Protocol)</h4>
+    <p><strong>Definición:</strong> Sin conexión; prioriza velocidad sobre fiabilidad.</p>
+
+    <h4>• ICMP (Internet Control Message Protocol)</h4>
+    <p>
+      <strong>Definición:</strong> Protocolo de control/diagnóstico usado para notificar errores y validar conectividad.<br>
+      <strong>Ejemplos:</strong> <code>ping</code> (Echo Request/Reply), “Destination Unreachable”, “Time Exceeded”.
+    </p>
+
+    <h4>• Otros protocolos útiles</h4>
+    <ul>
+      <li><strong>GRE:</strong> Encapsulación de paquetes para crear túneles entre redes.</li>
+      <li><strong>IPsec (ESP/AH):</strong> Capa de seguridad para IP: confidencialidad, integridad y autenticación.</li>
+      <li><strong>SCTP:</strong> Alternativa a TCP/UDP, muy usado en telecomunicaciones (multistream, multihoming).</li>
+    </ul>
+
+    <h4>• Puertos lógicos</h4>
+    <p><strong>Definición:</strong> Identifican servicios específicos dentro de un host.</p>
+    <ul>
+      <li><code>80  : HTTP</code></li>
+      <li><code>443 : HTTPS</code></li>
+      <li><code>25  : SMTP</code></li>
+    </ul>
+
+    <hr>
+
+    <h3>4) Tipos de redes y alcance</h3>
+    <h4>• LAN (Local Area Network)</h4>
+    <p>Red que cubre un área geográfica limitada.</p>
+    <h4>• WAN (Wide Area Network)</h4>
+    <p>Red que conecta múltiples LAN a grandes distancias (Internet es el ejemplo más conocido).</p>
+
+    <hr>
+
+    <h3>5) Dispositivos de red</h3>
+    <h4>• Switch</h4>
+    <p>Conecta dispositivos en una LAN y envía datos solo al destino correcto.</p>
+    <h4>• Router</h4>
+    <p>Conecta redes distintas y decide la ruta de la información.</p>
+    <h4>• Firewall</h4>
+    <p>Filtra y controla el tráfico de red según reglas de seguridad.</p>
+
+    <hr>
+
+    <h2>🧾 Conclusión</h2>
+    <p>
+      Comprender estos conceptos es esencial para construir redes seguras. Saber cómo identificar dispositivos, cómo se comunican y cómo se administran las direcciones IP públicas permite aplicar medidas de seguridad más efectivas. El paso de las clases fijas a <strong>CIDR</strong> optimizó el uso de direcciones y mejoró la escalabilidad de Internet.
+    </p>
+
+    <hr>
+
+    <h2>📊 Tabla resumen de direcciones IP</h2>
+    <div style="overflow-x:auto;">
+      <table border="1" cellpadding="8">
+        <thead>
+          <tr>
+            <th>Tipo de IP</th>
+            <th>Rango</th>
+            <th>Uso principal</th>
+            <th>Administrador/Norma</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Privada A</td>
+            <td><code>10.0.0.0 – 10.255.255.255</code></td>
+            <td>Redes internas grandes</td>
+            <td>RFC 1918</td>
+            <td>Requiere NAT</td>
+          </tr>
+          <tr>
+            <td>Privada B</td>
+            <td><code>172.16.0.0 – 172.31.255.255</code></td>
+            <td>Redes internas medianas</td>
+            <td>RFC 1918</td>
+            <td>Requiere NAT</td>
+          </tr>
+          <tr>
+            <td>Privada C</td>
+            <td><code>192.168.0.0 – 192.168.255.255</code></td>
+            <td>Redes domésticas y pequeñas</td>
+            <td>RFC 1918</td>
+            <td>Requiere NAT</td>
+          </tr>
+          <tr>
+            <td>Pública</td>
+            <td><code>1.0.0.0 – 223.255.255.255*</code></td>
+            <td>Internet global</td>
+            <td>IANA / RIR</td>
+            <td>Excluye reservadas</td>
+          </tr>
+          <tr>
+            <td>Loopback</td>
+            <td><code>127.0.0.0 – 127.255.255.255</code></td>
+            <td>Pruebas locales</td>
+            <td>RFC 1122</td>
+            <td>Localhost</td>
+          </tr>
+          <tr>
+            <td>APIPA</td>
+            <td><code>169.254.0.0 – 169.254.255.255</code></td>
+            <td>Autoasignación sin DHCP</td>
+            <td>RFC 3927</td>
+            <td>Conectividad limitada</td>
+          </tr>
+          <tr>
+            <td>Multicast</td>
+            <td><code>224.0.0.0 – 239.255.255.255</code></td>
+            <td>Difusión a grupos</td>
+            <td>IANA</td>
+            <td>Streaming/routing</td>
+          </tr>
+          <tr>
+            <td>Broadcast</td>
+            <td><code>255.255.255.255</code></td>
+            <td>Difusión a toda la red</td>
+            <td>RFC 919</td>
+            <td>Solo red local</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="opacity:.8; font-size:.95rem; margin-top:8px;">
+      * Excluyendo rangos reservados y especiales.
+    </p>
+
+    <hr>
+
+    <h2>📚 Referencias</h2>
+    <ul>
+      <li>IANA. (2023).. IPv4 Address Space Registry. <a href="https://www.iana.org/assignments/ipv4-address-space/" target="_blank">https://www.iana.org/assignments/ipv4-address-space/</a></li>
+      <li>LACNIC. (2023). Asignación y administración de direcciones IP. <a href="https://www.lacnic.net" target="_blank">https://www.lacnic.net</a></li>
+      <li>RFC 1918. (1996). Address Allocation for Private Internets. IETF. <a href="https://doi.org/10.17487/RFC1918" target="_blank">https://doi.org/10.17487/RFC1918</a></li>
+      <li>RFC 4632. (2006). Classless Inter-domain Routing (CIDR). IETF. <a href="https://doi.org/10.17487/RFC4632" target="_blank">https://doi.org/10.17487/RFC4632</a></li>
+      <li>RFC 1122. (1989). Requirements for Internet Hosts – Communication Layers. IETF. <a href="https://doi.org/10.17487/RFC1122" target="_blank">https://doi.org/10.17487/RFC1122</a></li>
+      <li>RFC 919. (1984). Broadcasting Internet Datagrams. IETF. <a href="https://doi.org/10.17487/RFC0919" target="_blank">https://doi.org/10.17487/RFC0919</a></li>
+    </ul>
+
+  </main>
+
+  <div data-include="footer"></div>
+  <script src="assets/js/scripts.js"></script>
+</body>
+</html>
+

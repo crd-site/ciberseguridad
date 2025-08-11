@@ -1,0 +1,108 @@
+<div style="font-family: Arial, sans-serif; line-height: 1.6;">
+
+  <h2 style="color: #2c3e50;">📡 Fundamentos Básicos de Redes</h2>
+
+  <h3 style="color: #16a085;">🔍 Comprobación de configuración de red</h3>
+  <p>Antes de aprender los conceptos, es útil saber cómo consultar la configuración de red en tu equipo:</p>
+
+  <h4>💻 En Windows</h4>
+  <ol>
+    <li>Presiona <strong>Windows + R</strong>, escribe <code>cmd</code> y pulsa <strong>Enter</strong>.</li>
+    <li>Escribe:
+      <pre style="background-color: #f4f4f4; padding: 8px; border-radius: 5px;">ipconfig</pre>
+      Esto mostrará la dirección IP, máscara de subred, puerta de enlace predeterminada y otros datos.
+    </li>
+  </ol>
+
+  <h4>🐧 En Linux</h4>
+  <ol>
+    <li>Abre la terminal.</li>
+    <li>Escribe:
+      <pre style="background-color: #f4f4f4; padding: 8px; border-radius: 5px;">ip addr show</pre>
+      o
+      <pre style="background-color: #f4f4f4; padding: 8px; border-radius: 5px;">ifconfig</pre>
+      (<em>puede requerir instalar net-tools</em>).
+    </li>
+    <li>Para ver la puerta de enlace:
+      <pre style="background-color: #f4f4f4; padding: 8px; border-radius: 5px;">ip route</pre>
+    </li>
+  </ol>
+
+  <h3 style="color: #16a085;">📖 Introducción</h3>
+  <p>En ciberseguridad, comprender cómo funcionan las redes es fundamental: no se puede proteger lo que no se entiende. Las redes son el medio por el que viaja la información, y defenderlas implica conocer cómo se identifican los dispositivos, cómo se comunican y qué elementos intervienen en el proceso.</p>
+
+  <h3 style="color: #16a085;">📌 Lecciones Aprendidas</h3>
+
+  <h4>1️⃣ Conceptos básicos de redes</h4>
+  <ul>
+    <li><strong>Dirección IP:</strong> Número único que identifica a un dispositivo en una red. Ejemplo: <code>192.168.1.25</code>.</li>
+    <li><strong>Máscara de subred:</strong> Determina qué parte de la IP es de red y cuál de host. Ejemplo: <code>255.255.255.0</code>.</li>
+    <li><strong>Gateway o Puerta de Enlace:</strong> Dispositivo que conecta la red local con otras redes (por ejemplo, Internet).</li>
+    <li><strong>Dirección de red:</strong> Identifica a toda la red. Ej.: <code>192.168.1.0</code>.</li>
+    <li><strong>Dirección de broadcast:</strong> Envía datos a todos los dispositivos de la red. Ej.: <code>192.168.1.255</code>.</li>
+    <li><strong>IP privadas:</strong> 10.x.x.x, 172.16.x.x – 172.31.x.x, 192.168.x.x.</li>
+    <li><strong>IP públicas:</strong> Asignadas globalmente por IANA y RIRs.</li>
+    <li><strong>Direcciones especiales:</strong> Loopback, APIPA, Multicast, Broadcast.</li>
+    <li><strong>Wildcard mask:</strong> Inverso de la máscara de subred. Ej.: <code>0.0.0.255</code>.</li>
+  </ul>
+
+  <h4>2️⃣ Resolución de nombres y servicios esenciales</h4>
+  <ul>
+    <li><strong>DNS:</strong> Traduce nombres de dominio a direcciones IP.</li>
+    <li><strong>DHCP:</strong> Asigna IP y parámetros de red automáticamente.</li>
+  </ul>
+
+  <h4>3️⃣ Protocolos de transporte y red</h4>
+  <ul>
+    <li><strong>TCP:</strong> Orientado a conexión, garantiza entrega y orden.</li>
+    <li><strong>UDP:</strong> Sin conexión, prioriza velocidad sobre fiabilidad.</li>
+    <li><strong>ICMP:</strong> Protocolo usado para enviar mensajes de control y diagnóstico (ej.: <code>ping</code>).</li>
+    <li><strong>Otros protocolos:</strong> GRE (encapsulación), ESP/AH (IPsec), SCTP (telecomunicaciones).</li>
+    <li><strong>Puertos lógicos:</strong> Ejemplos: 80 (HTTP), 443 (HTTPS), 25 (SMTP).</li>
+  </ul>
+
+  <h4>4️⃣ Tipos de redes</h4>
+  <ul>
+    <li><strong>LAN:</strong> Área geográfica reducida.</li>
+    <li><strong>WAN:</strong> Conecta múltiples LAN a gran distancia.</li>
+  </ul>
+
+  <h4>5️⃣ Dispositivos de red</h4>
+  <ul>
+    <li><strong>Switch:</strong> Conecta dispositivos en una LAN.</li>
+    <li><strong>Router:</strong> Conecta redes distintas y enruta tráfico.</li>
+    <li><strong>Firewall:</strong> Filtra tráfico según reglas de seguridad.</li>
+  </ul>
+
+  <h3 style="color: #16a085;">📊 Tabla resumen de direcciones IP</h3>
+  <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; background-color: #f9f9f9;">
+    <tr style="background-color: #2c3e50; color: white;">
+      <th>Tipo de IP</th>
+      <th>Rango</th>
+      <th>Uso principal</th>
+      <th>Administrador/Norma</th>
+      <th>Observaciones</th>
+    </tr>
+    <tr><td>Privada A</td><td>10.0.0.0 – 10.255.255.255</td><td>Redes internas grandes</td><td>RFC 1918</td><td>Requiere NAT</td></tr>
+    <tr><td>Privada B</td><td>172.16.0.0 – 172.31.255.255</td><td>Redes internas medianas</td><td>RFC 1918</td><td>Requiere NAT</td></tr>
+    <tr><td>Privada C</td><td>192.168.0.0 – 192.168.255.255</td><td>Redes domésticas y pequeñas</td><td>RFC 1918</td><td>Requiere NAT</td></tr>
+    <tr><td>Pública</td><td>1.0.0.0 – 223.255.255.255*</td><td>Internet global</td><td>IANA / RIR</td><td>Excluye reservadas</td></tr>
+    <tr><td>Loopback</td><td>127.0.0.0 – 127.255.255.255</td><td>Pruebas locales</td><td>RFC 1122</td><td>Localhost</td></tr>
+    <tr><td>APIPA</td><td>169.254.0.0 – 169.254.255.255</td><td>Autoasignación sin DHCP</td><td>RFC 3927</td><td>Conectividad limitada</td></tr>
+    <tr><td>Multicast</td><td>224.0.0.0 – 239.255.255.255</td><td>Difusión a grupos específicos</td><td>IANA</td><td>Streaming/routing</td></tr>
+    <tr><td>Broadcast</td><td>255.255.255.255</td><td>Difusión a toda la red</td><td>RFC 919</td><td>Solo red local</td></tr>
+  </table>
+
+  <p style="font-size: 0.9em;"><em>* Excluyendo rangos reservados y especiales.</em></p>
+
+  <h3 style="color: #16a085;">📚 Referencias</h3>
+  <ul>
+    <li>IANA. (2023). IPv4 Address Space Registry. <a href="https://www.iana.org/assignments/ipv4-address-space/">https://www.iana.org/assignments/ipv4-address-space/</a></li>
+    <li>LACNIC. (2023). Asignación y administración de direcciones IP. <a href="https://www.lacnic.net">https://www.lacnic.net</a></li>
+    <li>RFC 1918. (1996). Address Allocation for Private Internets. IETF. <a href="https://doi.org/10.17487/RFC1918">https://doi.org/10.17487/RFC1918</a></li>
+    <li>RFC 4632. (2006). Classless Inter-domain Routing (CIDR). IETF. <a href="https://doi.org/10.17487/RFC4632">https://doi.org/10.17487/RFC4632</a></li>
+    <li>RFC 1122. (1989). Requirements for Internet Hosts – Communication Layers. IETF. <a href="https://doi.org/10.17487/RFC1122">https://doi.org/10.17487/RFC1122</a></li>
+    <li>RFC 919. (1984). Broadcasting Internet Datagrams. IETF. <a href="https://doi.org/10.17487/RFC0919">https://doi.org/10.17487/RFC0919</a></li>
+  </ul>
+
+</div>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía de Uso Wireshark</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+  <main>
+    <!-- Aviso ético -->
+    <div class="aviso-etico">
+      🛡️ <strong>Uso educativo y ético:</strong> Este material fue elaborado exclusivamente con fines académicos para el área de <strong>ciberseguridad</strong>. Todo el contenido se utiliza en un entorno controlado, con propósitos <strong>formativos</strong> guiados por el docente. Como parte del aprendizaje, se introduce el <strong>modelado de amenazas</strong> para desarrollar una <strong>mentalidad crítica</strong> hacia la seguridad, enseñando a los estudiantes a analizar sistemas desde la perspectiva de un <strong>posible atacante</strong> con el fin de anticipar y prevenir riesgos. Lejos de constituir una guía para <strong>prácticas ilegales</strong>, este enfoque busca formar <strong>profesionales conscientes</strong>, capaces de pensar como un atacante para <strong>proteger mejor los sistemas</strong>.
+    </div>
+
+    <!-- Encabezado principal -->
+    <h1>🧠 Guía de Uso Wireshark</h1>
+
+    <!-- Intro / ¿Qué es? -->
+    <h2>🧾 ¿Qué es Wireshark?</h2>
+    <p>
+      <strong>Wireshark</strong> es un analizador de protocolos de red que permite capturar, inspeccionar y analizar el tráfico que circula por las interfaces de red. Es clave en <strong>ciberseguridad</strong>, <strong>análisis forense</strong> y <strong>administración de redes</strong> para detectar problemas, identificar ataques y entender el comportamiento de aplicaciones y protocolos.
+    </p>
+    <div class="aviso-etico" style="margin-top: 16px;">
+      💡 <strong>Nota:</strong> En <strong>Kali Linux</strong> suele venir preinstalado. Verificá permisos de captura:
+      <pre><code>sudo wireshark (o directamente de la interfaz gradica GUI)
+    (solo si no tiene permisos el usuario) >>   sudo usermod -aG wireshark $USER</code></pre>
+      Luego, cerrá sesión y volvé a entrar para aplicar los cambios.
+    </div>
+
+    <hr>
+
+    <!-- 1. Instalación y preparación -->
+    <h2>🛠️ 1. Instalación y Preparación</h2>
+
+    <h3>1.1 Descarga (si no usás Kali)</h3>
+    <ul>
+      <li>🌍 Sitio oficial: <a href="https://www.wireshark.org/" target="_blank">https://www.wireshark.org/</a></li>
+      <li>Disponible para Windows, Linux y macOS.</li>
+    </ul>
+
+    <h3>1.2 Instalación en Windows</h3>
+    <ol>
+      <li>Descargar el instalador <code>.exe</code>.</li>
+      <li>Ejecutar y aceptar la licencia.</li>
+      <li>Incluir <strong>Npcap</strong> cuando se solicite (necesario para capturar).</li>
+      <li>Finalizar e iniciar desde el menú Inicio.</li>
+    </ol>
+
+    <h3>1.3 Instalación en Linux (Ubuntu/Debian)</h3>
+    <pre><code>sudo apt update
+sudo apt install wireshark
+sudo usermod -aG wireshark $USER</code></pre>
+    <p>🔁 Cerrá sesión y volvé a entrar para aplicar permisos.</p>
+
+    <h3>1.4 Instalación en macOS (Homebrew)</h3>
+    <pre><code>brew install --cask wireshark</code></pre>
+    <p>🔐 Autorizá permisos de captura si macOS lo solicita.</p>
+
+    <h3>1.5 Uso en entornos virtualizados (VMware / VirtualBox / GNS3)</h3>
+    <ul>
+      <li>En <strong>VMware</strong>, el modo de red afecta lo que ves:
+        <ul>
+          <li><strong>NAT</strong>: verás tráfico de la VM hacia Internet a través del host.</li>
+          <li><strong>Bridge</strong>: la VM está en la red física; podés ver más tráfico de la LAN.</li>
+          <li><strong>Host-Only</strong>: solo tráfico entre VM y host.</li>
+        </ul>
+      </li>
+      <li>En <strong>GNS3</strong>, podés conectar Wireshark a enlaces virtuales para inspeccionar cada segmento.</li>
+      <li>Recordá elegir la <strong>interfaz correcta</strong> (o adaptador virtual) antes de capturar.</li>
+    </ul>
+
+    <hr>
+
+    <!-- 2. Nivel inicial -->
+    <h2>🌱 2. Nivel Inicial — Primeros Pasos</h2>
+
+    <h3>2.1 Interfaz principal</h3>
+    <ul>
+      <li>Listado de interfaces disponibles</li>
+      <li>Barra de filtros</li>
+      <li>Panel de paquetes (arriba)</li>
+      <li>Panel de detalles (medio)</li>
+      <li>Panel de bytes (abajo)</li>
+    </ul>
+
+    <h3>2.2 Selección de interfaz y captura básica</h3>
+    <ol>
+      <li>Identificá la interfaz con tráfico (Wi-Fi, Ethernet, etc.).</li>
+      <li>Doble clic para iniciar la captura.</li>
+      <li>Detenela con el botón rojo.</li>
+    </ol>
+
+    <h3>2.3 Filtros de visualización básicos</h3>
+    <pre><code>http
+dns
+tcp
+ip.addr == 192.168.1.10</code></pre>
+
+    <h3>2.4 Ejercicio básico</h3>
+    <ul>
+      <li>Capturá tráfico mientras visitás un sitio <strong>HTTP</strong>.</li>
+      <li>Filtrá con <code>http</code> y observá solicitudes <strong>GET</strong>/<strong>POST</strong>.</li>
+      <li>Respondé: ¿Cuál es la IP del servidor web?</li>
+    </ul>
+
+    <h3>2.5 Filtros de captura vs. visualización</h3>
+    <p>Los <strong>filtros de captura</strong> se aplican <em>antes</em> de iniciar la captura (limitan qué paquetes se guardan). Los <strong>filtros de visualización</strong> se aplican <em>después</em> (solo ocultan/mostrar en pantalla).</p>
+    <div class="aviso-etico" style="margin-top: 10px;">
+      <p><strong>Ejemplos de filtros de captura</strong> (sintaxis BPF, definidos antes de iniciar):</p>
+      <pre><code>port 80
+host 192.168.1.10
+net 10.0.0.0/8
+tcp and not port 22</code></pre>
+      <p><strong>Ejemplos de filtros de visualización</strong> (barra de filtros):</p>
+      <pre><code>http && ip.dst == 192.168.1.50
+tcp.flags.syn == 1 && tcp.flags.ack == 0
+dns.qry.name contains "example.com"</code></pre>
+    </div>
+
+    <hr>
+
+    <!-- 3. Nivel intermedio -->
+    <h2>🧩 3. Nivel Intermedio — Análisis Detallado</h2>
+
+    <h3>3.1 Análisis de protocolos</h3>
+    <ul>
+      <li><strong>TCP</strong>: seguimiento de conversaciones (<em>Follow TCP Stream</em>).</li>
+      <li><strong>UDP</strong>: tráfico sin confirmaciones.</li>
+      <li><strong>ICMP</strong>: diagnóstico de conectividad.</li>
+    </ul>
+
+    <h3>3.2 Reconstrucción de flujos</h3>
+    <p>Clic derecho sobre un paquete → <strong>Follow</strong> → elegí el protocolo (TCP/UDP/HTTP…).</p>
+
+    <h3>3.3 Perfiles personalizados</h3>
+    <ul>
+      <li>Coloreado por tipo de tráfico.</li>
+      <li>Guardado de filtros frecuentes.</li>
+    </ul>
+
+    <h3>3.4 Ejercicio intermedio</h3>
+    <ul>
+      <li>Capturá tráfico de una búsqueda <strong>DNS</strong>.</li>
+      <li>Filtrá con <code>dns</code> y determiná el dominio consultado y la IP de respuesta.</li>
+    </ul>
+
+    <h3>3.5 Estadísticas útiles</h3>
+    <ul>
+      <li><strong>Statistics → Protocol Hierarchy</strong>: vista porcentual por protocolos.</li>
+      <li><strong>Statistics → Conversations</strong>: pares de comunicación (IP/puertos), bytes y paquetes.</li>
+      <li><strong>Statistics → Endpoints</strong>: hosts involucrados (IPs, MACs), útil para identificar top talkers.</li>
+    </ul>
+
+    <hr>
+
+    <!-- 4. Nivel avanzado -->
+    <h2>🚀 4. Nivel Avanzado — Uso Profesional</h2>
+
+    <h3>4.1 Filtros complejos</h3>
+    <p>HTTP hacia una IP específica:</p>
+    <pre><code>http && ip.dst == 192.168.1.50</code></pre>
+
+    <h3>4.2 Análisis de tráfico cifrado</h3>
+    <ul>
+      <li>Identificar handshake <strong>TLS</strong> y certificados.</li>
+      <li>Uso de claves para descifrado (solo en entornos controlados).</li>
+    </ul>
+
+    <h3>4.3 Detección de patrones de ataque</h3>
+    <p>Escaneo SYN (posible port scan):</p>
+    <pre><code>tcp.flags.syn == 1 && tcp.flags.ack == 0</code></pre>
+    <p>Intentos DoS: observar alto volumen hacia un mismo destino en poco tiempo.</p>
+
+    <h3>4.4 Integración con TShark (CLI)</h3>
+    <p>TShark es la versión de línea de comandos de Wireshark (sin interfaz gráfica) y permite capturar, filtrar y analizar tráfico.</p>
+    <pre><code>tshark -i eth0 -f "tcp port 80" -w captura_http.pcap</code></pre>
+
+    <h3>4.5 Ejercicio avanzado</h3>
+    <ul>
+      <li>Analizá un <code>.pcap</code> sospechoso.</li>
+      <li>Identificá el tipo de ataque, protocolo implicado, IP origen/destino.</li>
+    </ul>
+
+    <h3>4.6 Reconstrucción de archivos y objetos</h3>
+    <p>Wireshark permite reconstruir conversaciones y, en muchos casos, extraer archivos completos capturados en la red. Esto es útil para auditorías, análisis forense y diagnóstico de problemas.</p>
+
+    <h4>a) Preparar la captura</h4>
+    <p>Generá tráfico real descargando un archivo (laboratorio controlado):</p>
+    <ul>
+      <li><code>.zip</code></li>
+      <li><code>.jpg</code></li>
+      <li><code>.pdf</code></li>
+      <li>Otro archivo permitido</li>
+    </ul>
+    <p>💡 Así asegurás tráfico claro para extraer.</p>
+
+    <h4>b) Seguir conversaciones (Follow Stream)</h4>
+    <ol>
+      <li>Abrí o capturá un <code>.pcap</code>.</li>
+      <li>Localizá un paquete del protocolo de interés (p.ej. <strong>HTTP</strong>).</li>
+      <li>Clic derecho → <strong>Follow</strong> → <em>TCP Stream</em> o <em>UDP Stream</em>.</li>
+      <li>Verás la conversación reconstruida (cliente/servidor por color).</li>
+      <li>Cambiá la codificación (ASCII, Hex, etc.) según necesidad.</li>
+    </ol>
+
+    <h4>c) Exportar objetos</h4>
+    <ol>
+      <li>Menú <strong>File</strong> → <strong>Export Objects</strong> → (HTTP, SMB, etc.).</li>
+      <li>Seleccioná el archivo de la lista y guardalo.</li>
+    </ol>
+    <p>💡 Si un JPG viajó por HTTP, se podrá guardar desde esta opción.</p>
+
+    <h4>d) Consideraciones</h4>
+    <ul>
+      <li>Funciona si el tráfico está sin cifrar o si tenés claves para descifrar.</li>
+      <li>Usar solo con autorización expresa.</li>
+      <li>Útil para evidenciar riesgos al transmitir datos sin cifrar.</li>
+    </ul>
+
+    <h3>4.7 Flujo de trabajo con tcpdump</h3>
+    <p>Para capturar desde CLI (servidores/SSH) y analizar luego en Wireshark:</p>
+    <pre><code># Listar interfaces
+sudo tcpdump -D
+
+# Capturar 200 paquetes HTTP en eth0 y guardar a pcap
+sudo tcpdump -i eth0 -c 200 -w captura_http.pcap 'tcp port 80'
+
+# Filtro por host o red
+sudo tcpdump -i eth0 -w salida.pcap 'host 192.168.1.10'
+sudo tcpdump -i eth0 -w salida.pcap 'net 10.0.0.0/8'</code></pre>
+    <p>Abrí luego el archivo <code>.pcap</code> en Wireshark para análisis detallado.</p>
+
+    <hr>
+
+    <!-- Buenas prácticas -->
+    <h2>🛡️ 5. Buenas Prácticas y Ética</h2>
+    <ul>
+      <li>Capturá únicamente en redes donde tengas autorización.</li>
+      <li>Almacená archivos <code>.pcap</code> de forma segura.</li>
+      <li>Documentá hallazgos con contexto técnico y legal.</li>
+      <li>Nombrá capturas de forma clara (ej.: <code>2025-08-10_lab_http.pcap</code>).</li>
+      <li>Agregá una breve descripción del escenario junto al archivo.</li>
+    </ul>
+
+    <hr>
+
+    <!-- Troubleshooting -->
+    <h2>🧯 6. Resolución de problemas comunes</h2>
+    <ul>
+      <li><strong>No veo interfaces</strong> → Verificar instalación/servicio de Npcap (Windows) o permisos (Linux).</li>
+      <li><strong>No veo tráfico</strong> → Elegiste la interfaz equivocada; probá otra o cambiá el modo de red de la VM.</li>
+      <li><strong>Tráfico cifrado ilegible</strong> → Limitación esperable sin claves; usar descifrado solo en entornos controlados.</li>
+      <li><strong>Error de permisos en Linux</strong> → Asegurate de estar en el grupo <code>wireshark</code> y reiniciar sesión.</li>
+    </ul>
+
+    <hr>
+
+    <!-- Recursos -->
+    <h2>📚 7. Recursos Adicionales</h2>
+    <ul>
+      <li>Wireshark Foundation — <a href="https://www.wireshark.org/docs/" target="_blank">Wireshark User’s Guide</a></li>
+      <li>Kurose & Ross — <em>Computer Networking: A Top-Down Approach</em>.</li>
+      <li>Sanders — <em>Practical Packet Analysis</em>, No Starch Press.</li>
+    </ul>
+
+    <hr>
+
+    <!-- Ejercicio final -->
+    <h2>🎓 8. Ejercicio final integrador</h2>
+    <ol>
+      <li>Elegí una interfaz y capturá durante 2–3 minutos.</li>
+      <li>Aplicá un filtro de captura y luego de visualización.</li>
+      <li>Seguí un flujo (Follow TCP/UDP Stream).</li>
+      <li>Exportá un objeto (si corresponde, p.ej. HTTP).</li>
+      <li>Generá un mini informe (1 página): objetivos, filtros usados, hallazgos y capturas de pantalla.</li>
+    </ol>
+
+  </main>
+
+  <div data-include="footer"></div>
+  <script src="assets/js/scripts.js"></script>
+</body>
+</html>

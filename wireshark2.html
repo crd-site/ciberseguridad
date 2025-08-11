@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía Definitiva de Uso Wireshark | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Usa tu CSS global del sitio -->
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+  <main>
+    <!-- Aviso ético (sin modificar) -->
+    <div class="aviso-etico">
+      🛡️ <strong>Uso educativo y ético:</strong> Este material fue elaborado exclusivamente con fines académicos para el área de <strong>ciberseguridad</strong>. Todo el contenido se utiliza en un entorno controlado, con propósitos <strong>formativos</strong> guiados por el docente. Como parte del aprendizaje, se introduce el <strong>modelado de amenazas</strong> para desarrollar una <strong>mentalidad crítica</strong> hacia la seguridad, enseñando a los estudiantes a analizar sistemas desde la perspectiva de un <strong>posible atacante</strong> con el fin de anticipar y prevenir riesgos. Lejos de constituir una guía para <strong>prácticas ilegales</strong>, este enfoque busca formar <strong>profesionales conscientes</strong>, capaces de pensar como un atacante para <strong>proteger mejor los sistemas</strong>.
+    </div>
+
+    <!-- Contenido -->
+    <h1>🧠 Guía Definitiva de Uso de Wireshark</h1>
+
+    <h2>🧾 ¿Qué es Wireshark?</h2>
+    <p><strong>Wireshark</strong> es un analizador de protocolos de red que permite capturar, inspeccionar y analizar el tráfico que circula por las interfaces de red. Es una herramienta clave en <strong>ciberseguridad</strong>, <strong>análisis forense</strong> y <strong>administración de redes</strong> para detectar problemas, identificar ataques y entender el comportamiento de aplicaciones y protocolos.</p>
+
+    <h2>⚠️ Conceptos Clave Antes de Empezar</h2>
+    <h3>Filtros de Captura vs. Filtros de Visualización</h3>
+    <ul>
+      <li><strong>Filtros de Captura:</strong> se aplican <em>antes</em> de iniciar la captura (ej.: <code>tcp port 80</code>). Limitan qué tráfico se guarda (ahorran recursos). Sintaxis BPF.</li>
+      <li><strong>Filtros de Visualización:</strong> se aplican <em>después</em> de capturar (ej.: <code>http.request.method == "POST"</code>). Ocultan/ muestran en pantalla. Muy potentes.</li>
+    </ul>
+
+    <h3>Modo Promiscuo vs. Modo Monitor</h3>
+    <ul>
+      <li><strong>Promiscuo (Ethernet):</strong> la tarjeta captura todos los paquetes del segmento, no solo los dirigidos a ella (Wireshark lo activa por defecto).</li>
+      <li><strong>Monitor (Wi-Fi):</strong> captura tramas 802.11 “del aire” sin asociarse a un AP (útil para auditorías Wi-Fi).</li>
+    </ul>
+
+    <div class="aviso-etico" style="margin-top:16px;">
+      💡 <strong>Nota:</strong> En <strong>Kali Linux</strong> suele venir preinstalado. Verificá permisos de captura:
+      <pre><code>sudo wireshark
+        solo si no tiene permisos el usuario
+sudo usermod -aG wireshark $USER</code></pre>
+      Luego, cerrá sesión y volvé a entrar para aplicar los cambios.
+    </div>
+
+    <hr>
+
+    <h2>🛠️ 1. Instalación y Preparación</h2>
+
+    <h3>1.1 Descarga (si no usás Kali)</h3>
+    <ul>
+      <li>🌍 Sitio oficial: <a href="https://www.wireshark.org/" target="_blank">https://www.wireshark.org/</a></li>
+      <li>Disponible para Windows, Linux y macOS.</li>
+    </ul>
+
+    <h3>1.2 Instalación en Windows</h3>
+    <ol>
+      <li>Descargar el instalador <code>.exe</code>.</li>
+      <li>Ejecutar y aceptar la licencia.</li>
+      <li>Incluir <strong>Npcap</strong> cuando se solicite (necesario para capturar).</li>
+      <li>Finalizar e iniciar desde el menú Inicio.</li>
+    </ol>
+
+    <h3>1.3 Instalación en Linux (Ubuntu/Debian)</h3>
+    <p>Durante la instalación, elegí que usuarios no-root puedan capturar.</p>
+    <pre><code>sudo apt update
+sudo apt install wireshark
+sudo usermod -aG wireshark $USER</code></pre>
+    <p>🔁 Cerrá sesión y volvé a entrar para aplicar permisos.</p>
+
+    <h3>1.4 Instalación en macOS (Homebrew)</h3>
+    <pre><code>brew install --cask wireshark</code></pre>
+    <p>🔐 Autorizá permisos de captura si macOS lo solicita.</p>
+
+    <hr>
+
+    <h2>🌱 2. Nivel Inicial — Primeros Pasos</h2>
+
+    <h3>2.1 Interfaz principal</h3>
+    <ul>
+      <li><strong>Listado de interfaces:</strong> tarjetas (Wi-Fi, Ethernet) y gráfico de actividad.</li>
+      <li><strong>Panel de paquetes (arriba):</strong> cronología de paquetes.</li>
+      <li><strong>Panel de detalles (medio):</strong> capas y campos del paquete.</li>
+      <li><strong>Panel de bytes (abajo):</strong> vista Hex/ASCII del payload.</li>
+    </ul>
+
+    <h3>2.2 Selección de interfaz y captura básica</h3>
+    <ol>
+      <li>Elegí la interfaz con tráfico (Wi-Fi/Ethernet).</li>
+      <li>Doble clic para iniciar.</li>
+      <li>Detenela con el botón rojo (Stop).</li>
+    </ol>
+
+    <h3>2.3 Filtros de visualización básicos</h3>
+    <pre><code>http
+dns
+tcp
+udp
+ip.addr == 192.168.1.10</code></pre>
+
+    <h3>2.4 Ejercicio básico</h3>
+    <ol>
+      <li>Capturá tráfico visitando un sitio HTTP (ej.: <code>http://neverssl.com/</code>).</li>
+      <li>Filtrá con <code>http</code> y observá <code>GET/POST</code>.</li>
+      <li><strong>Respondé:</strong> ¿Cuál es la IP destino del servidor?</li>
+    </ol>
+
+    <h3>2.5 Guardar y Abrir Capturas</h3>
+    <ul>
+      <li><strong>Guardar:</strong> <em>File → Save As…</em> en <code>.pcapng</code> (defecto) o <code>.pcap</code>.</li>
+      <li><strong>Abrir:</strong> <em>File → Open</em> para analizar capturas de terceros.</li>
+    </ul>
+
+    <hr>
+
+    <h2>🧩 3. Nivel Intermedio — Análisis Detallado</h2>
+
+    <h3>3.1 Análisis de protocolos</h3>
+    <ul>
+      <li><strong>TCP:</strong> handshakes (SYN/SYN-ACK/ACK), retransmisiones, <em>Follow TCP Stream</em>.</li>
+      <li><strong>UDP:</strong> común en DNS/VoIP/streaming (sin control de entrega).</li>
+      <li><strong>ICMP:</strong> diagnóstico (ping).</li>
+    </ul>
+
+    <h3>3.2 Reconstrucción de flujos</h3>
+    <p>Clic derecho sobre un paquete → <strong>Follow</strong> → elegí protocolo (TCP/UDP/HTTP Stream…). Ventana con la conversación completa.</p>
+
+    <h3>3.3 Perfiles personalizados</h3>
+    <p>Perfiles con columnas, reglas de color y filtros guardados (gestión desde barra de estado).</p>
+
+    <h3>3.4 Ejercicio intermedio</h3>
+    <ol>
+      <li>Hacé <code>ping google.com</code> mientras capturás.</li>
+      <li>Filtrá con <code>dns</code> y encontrá dominio/IP de respuesta.</li>
+      <li>Filtrá con <code>icmp</code> para ver Echo Request/Reply.</li>
+    </ol>
+
+    <h3>3.5 El poder de “Statistics”</h3>
+    <ul>
+      <li><strong>Protocol Hierarchy:</strong> porcentaje por protocolo.</li>
+      <li><strong>Conversations:</strong> pares de comunicación (IPs/puertos), paquetes y bytes.</li>
+      <li><strong>Endpoints:</strong> hosts involucrados (IPs/MACs), top talkers.</li>
+    </ul>
+
+    <h3>3.6 Personalización de la Interfaz</h3>
+    <ul>
+      <li><strong>Coloring Rules:</strong> <em>View → Coloring Rules</em> (ej.: <code>tcp.flags.reset == 1</code> en rojo).</li>
+      <li><strong>Columnas:</strong> <em>Column Preferences</em> (ej.: <code>http.user_agent</code>).</li>
+    </ul>
+
+    <hr>
+
+    <h2>🚀 4. Nivel Avanzado — Uso Profesional</h2>
+
+    <h3>4.1 Filtros complejos</h3>
+    <pre><code>http.request.method == "POST" && ip.dst == 192.168.1.50
+!(dns || http)
+frame contains "password"</code></pre>
+
+    <h3>4.2 Tráfico cifrado (TLS)</h3>
+    <ul>
+      <li><strong>Handshakes:</strong> <code>tls.handshake.type == 1</code> (ClientHello), <code>== 2</code> (ServerHello).</li>
+      <li><strong>Descifrado con claves:</strong> en <em>Edit → Preferences → Protocols → TLS</em>, configurá <em>(Pre)-Master-Secret log filename</em> (solo tus apps/lab).</li>
+    </ul>
+
+    <h3>4.3 Patrones de ataque</h3>
+    <ul>
+      <li><strong>Port scan SYN:</strong> <code>tcp.flags.syn == 1 && tcp.flags.ack == 0</code></li>
+      <li><strong>DoS:</strong> <em>Statistics → IO Graph</em> para picos anómalos.</li>
+    </ul>
+
+    <h3>4.4 Integración con TShark (CLI)</h3>
+    <p>TShark es la versión de línea de comandos (ideal para automatización/servidores).</p>
+    <pre><code># Captura y guardado
+tshark -i eth0 -f "tcp port 80" -w captura_http.pcap
+
+# Extraer campos
+tshark -r captura.pcap -T fields -e ip.src -e ip.dst -e tcp.dstport</code></pre>
+
+    <h3>4.5 Ejercicio avanzado</h3>
+    <p>Analizá un <code>.pcap</code> sospechoso. Identificá tipo de ataque, protocolo, IP origen/destino.</p>
+
+    <h3>4.6 Reconstrucción de archivos y objetos</h3>
+    <p>Wireshark puede extraer archivos transferidos por protocolos no cifrados.</p>
+    <ol>
+      <li><strong>Generá tráfico</strong> descargando un archivo (<code>.zip</code>, <code>.jpg</code>, <code>.pdf</code>…).</li>
+      <li><strong>Capturá</strong> o abrí un <code>.pcap</code> con esa transferencia.</li>
+      <li><strong>File → Export Objects →</strong> elegí el protocolo (p.ej., <strong>HTTP</strong>).</li>
+      <li>Seleccioná el objeto y <strong>Save</strong> (útil en forense y para evidenciar riesgos de tráfico sin cifrar).</li>
+    </ol>
+
+    <h3>4.7 Análisis de rendimiento / troubleshooting</h3>
+    <ul>
+      <li><strong>Retransmisiones:</strong> <code>tcp.analysis.retransmission</code></li>
+      <li><strong>Latencia:</strong> columna con <code>tcp.time_delta</code></li>
+      <li><strong>Zero Window:</strong> <code>tcp.window_size == 0</code></li>
+      <li><strong>Expert Info:</strong> indicador (abajo a la izquierda) con errores/avisos.</li>
+    </ul>
+
+    <h3>4.8 VoIP (Telephony)</h3>
+    <ul>
+      <li><strong>Telephony → VoIP Calls</strong>: lista de llamadas (SIP/H.323).</li>
+      <li><strong>Play Streams</strong>: reproducción/ métricas (si no está cifrado y códec compatible).</li>
+    </ul>
+
+    <hr>
+
+    <h2>🛡️ 5. Buenas Prácticas y Ética</h2>
+    <ul>
+      <li>Capturá solo con autorización expresa.</li>
+      <li>Guardá <code>.pcap</code> de forma segura (contienen datos sensibles).</li>
+      <li>Documentá hallazgos con contexto técnico y legal.</li>
+    </ul>
+
+    <hr>
+
+    <h2>📚 6. Recursos Adicionales</h2>
+    <ul>
+      <li>Wireshark User’s Guide: <a href="https://www.wireshark.org/docs/" target="_blank">documentación oficial</a></li>
+      <li>Foro oficial: <a href="https://ask.wireshark.org/" target="_blank">ask.wireshark.org</a></li>
+      <li>Capturas de malware para practicar: <a href="https://www.malware-traffic-analysis.net/" target="_blank">Malware-Traffic-Analysis.net</a></li>
+      <li>Muestras: <a href="https://wiki.wireshark.org/SampleCaptures" target="_blank">Wireshark Sample Captures</a></li>
+      <li><strong>Libros:</strong> <em>Practical Packet Analysis</em> (Sanders); <em>Computer Networking: A Top-Down Approach</em> (Kurose & Ross).</li>
+    </ul>
+
+  </main>
+
+  <div data-include="footer"></div>
+  <script src="assets/js/scripts.js"></script>
+</body>
+</html>

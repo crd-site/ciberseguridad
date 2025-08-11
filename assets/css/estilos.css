@@ -67,7 +67,7 @@ a:hover {
 /* Código y bloques */
 code {
   background-color: #333;
-  color: #ffd700;
+  color: #ccff33;
   padding: 2px 6px;
   border-radius: 4px;
   font-family: 'Courier New', monospace;
@@ -75,7 +75,7 @@ code {
 
 pre, code {
   background-color: #333;
-  color: #ffd700;
+  color: #ccff33;
   padding: 8px;
   border-radius: 6px;
   display: block;
