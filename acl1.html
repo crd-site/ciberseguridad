@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía – Primer proyecto y router en GNS3 | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+  <main>
+
+    <!-- Aviso ético -->
+    <div class="aviso-etico">
+      🛡️ <strong>Uso educativo y ético:</strong> Este material fue desarrollado exclusivamente para fines académicos en el área de <strong>ciberseguridad</strong> y redes. Todo el contenido se utiliza en un entorno controlado, con propósitos <strong>formativos</strong> guiados por el docente <strong>Chrystian Ruiz Díaz</strong>. Como parte del aprendizaje, se introduce el <strong>modelado de amenazas</strong> para desarrollar una <strong>mentalidad crítica</strong> hacia la seguridad, enseñando a los estudiantes a analizar los sistemas desde la perspectiva de un <strong>posible atacante</strong> con el fin de anticipar y prevenir riesgos. Lejos de constituir una guía para <strong>prácticas ilegales</strong>, este enfoque busca precisamente formar <strong>profesionales conscientes</strong>, capaces de pensar como un atacante para <strong>proteger mejor los sistemas</strong>.
+    </div>
+
+    <h1>🖥️ Guía – Primer proyecto y router en GNS3</h1>
+
+    <hr>
+
+    <h2>📂 1. Abrir GNS3</h2>
+    <p><strong>Qué es:</strong> Es el primer paso para iniciar tu entorno de simulación y verificar que GNS3 esté listo para trabajar.</p>
+    <ol>
+      <li>Abrí <strong>GNS3</strong> desde el acceso directo o menú de inicio.</li>
+      <li>Revisá el estado de la <strong>GNS3 VM</strong> (esquina inferior derecha):<br>
+        🟢 <em>Verde</em> = VM conectada • 🔴 <em>Rojo</em> = VM apagada (encendé la VM en VMware/VirtualBox).
+      </li>
+    </ol>
+
+    <hr>
+
+    <h2>📁 2. Crear un nuevo proyecto</h2>
+    <p><strong>Qué es:</strong> Un “contenedor” donde se guarda toda la configuración, topología y archivos del laboratorio.</p>
+    <ol>
+      <li>Menú <strong>File → New Project</strong> (o <strong>Ctrl+N</strong>).</li>
+      <li>Escribí un nombre descriptivo (ej.: <code>Proyecto1_Router</code>).</li>
+      <li>Elegí la carpeta de destino y hacé clic en <strong>OK</strong>.</li>
+    </ol>
+
+    <hr>
+
+    <h2>📡 3. Añadir el primer router</h2>
+    <p><strong>Qué es:</strong> El dispositivo principal para tu laboratorio. Puede ser <strong>IOSv</strong> (recomendado con GNS3 VM) o modelos emulados <em>legacy</em> (7200/3725) con Dynamips.</p>
+    <ol>
+      <li>En <strong>Devices</strong>, buscá <strong>Routers</strong>.</li>
+      <li>Arrastrá un <strong>Cisco IOSv</strong> (o el que tengas) al área de trabajo.</li>
+      <li>Si no aparece ninguno: <strong>Edit → Preferences →</strong> (Dynamips/IOU/VM) y <strong>Add</strong> para cargar la imagen/plantilla.</li>
+    </ol>
+
+    <hr>
+
+    <h2>🔌 4. Conectar el router</h2>
+    <p><strong>Qué es:</strong> El cableado virtual que permite la comunicación entre dispositivos.</p>
+    <ol>
+      <li>Seleccioná el ícono <strong>Add a Link</strong> (cable).</li>
+      <li>Elegí la interfaz del router (ej.: <code>FastEthernet0/0</code> o <code>GigabitEthernet0/0</code>).</li>
+      <li>Conectá a un <strong>switch genérico</strong> o a una <strong>nube/NAT</strong> para alcanzar otras redes o VMs.</li>
+    </ol>
+
+    <hr>
+
+    <h2>▶️ 5. Encender el router</h2>
+    <p><strong>Qué es:</strong> Activar el dispositivo para iniciar su sistema operativo.</p>
+    <ol>
+      <li>Clic derecho sobre el router → <strong>Start</strong>.</li>
+      <li>Esperá a que el ícono cambie a <strong>verde</strong>.</li>
+    </ol>
+
+    <hr>
+
+    <h2>💻 6. Abrir consola y configuración básica</h2>
+    <p><strong>Qué es:</strong> La interfaz de línea de comandos (CLI) para administrar el router.</p>
+    <ol>
+      <li>Clic derecho → <strong>Console</strong>.</li>
+      <li>Ingresá los comandos iniciales (ejemplo con <code>Fa0/0</code>):</li>
+    </ol>
+
+    <pre><code>enable                               
+configure terminal                   
+interface FastEthernet0/0            
+ip address 192.168.1.1 255.255.255.0 
+no shutdown                          
+exit                                 
+write memory                          </code></pre>
+
+    <p><strong>💡 Nota:</strong> Si no ejecutás <code>write memory</code> o <code>copy running-config startup-config</code>, la configuración se perderá al reiniciar.</p>
+
+    <hr>
+
+    <h2>🧪 7. Probar conectividad</h2>
+    <p><strong>Qué es:</strong> Confirmar que el router responde en red.</p>
+    <ol>
+      <li>Agregá un <strong>PC genérico</strong> (VPCS o QEMU/VM) a la misma red del router.</li>
+      <li>Configurá la IP <code>192.168.1.2/24</code> y gateway <code>192.168.1.1</code> (si corresponde).</li>
+      <li>Desde la consola del PC, probá:</li>
+    </ol>
+
+    <pre><code>ping 192.168.1.1</code></pre>
+
+    <p>Si responde, ¡todo funciona! ✅</p>
+
+    <hr>
+
+    <h2>📜 8. Configuración de Access Lists (ACL)</h2>
+
+    <h3>🔎 ¿Qué es una ACL?</h3>
+    <p>Una <strong>Lista de Control de Acceso (ACL)</strong> es un conjunto de reglas que filtran el tráfico de red en función de criterios como IP de origen/destino, protocolo o puerto. Se aplican en una interfaz (<em>in</em>/<em>out</em>) para controlar qué tráfico puede entrar o salir.</p>
+
+    <h3>📚 Tipos de ACL y rangos</h3>
+    <div style="overflow-x:auto;">
+      <table border="1" cellpadding="8">
+        <thead>
+          <tr>
+            <th>Tipo de ACL</th>
+            <th>Rango clásico</th>
+            <th>Rango extendido</th>
+            <th>Qué filtra</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Estándar</td>
+            <td>1–99</td>
+            <td>1300–1999</td>
+            <td>Solo IP de origen</td>
+          </tr>
+          <tr>
+            <td>Extendida</td>
+            <td>100–199</td>
+            <td>2000–2699</td>
+            <td>Origen, destino, protocolo y puerto</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><strong>💡 Mnemotécnica:</strong> Estándar → números bajos → filtra menos. | Extendida → números altos → filtra más.</p>
+
+    <h3>🧩 Estructura general</h3>
+    <pre><code>access-list &lt;número&gt; &lt;permit|deny&gt; &lt;criterio&gt; &lt;wildcard mask&gt;</code></pre>
+
+    <h3>✅ Ejemplo – ACL estándar</h3>
+    <p><strong>Escenario:</strong> Bloquear el acceso de una PC específica <code>192.168.10.50</code> a toda la red.</p>
+    <pre><code>access-list 15 deny 192.168.10.50 0.0.0.0
+access-list 15 permit any
+interface FastEthernet0/0
+ip access-group 15 in</code></pre>
+    <ul>
+      <li>Usá ACL estándar cuando solo necesites filtrar por <strong>IP de origen</strong>.</li>
+      <li>Menor complejidad y consumo que una extendida.</li>
+    </ul>
+
+    <h3>✅ Ejemplo – ACL extendida</h3>
+    <p><strong>Escenario:</strong> Permitir que la red <code>192.168.10.0/24</code> solo acceda al servidor web <code>172.16.1.100</code> (HTTP/80) y bloquear el resto.</p>
+    <pre><code>access-list 110 permit tcp 192.168.10.0 0.0.0.255 host 172.16.1.100 eq 80
+access-list 110 deny ip any any
+interface FastEthernet0/0
+ip access-group 110 in</code></pre>
+
+    <p><strong>Sobre</strong> <code>deny ip any any</code>:
+      hay una <em>deny implícita</em> al final, pero dejarla explícita documenta mejor la política.</p>
+
+    <h3>⚖️ Comparativa rápida</h3>
+    <div style="overflow-x:auto;">
+      <table border="1" cellpadding="8">
+        <thead>
+          <tr>
+            <th>Característica</th>
+            <th>ACL estándar</th>
+            <th>ACL extendida</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Filtro</td>
+            <td>Solo IP de origen</td>
+            <td>Origen + destino + protocolo + puerto</td>
+          </tr>
+          <tr>
+            <td>Complejidad</td>
+            <td>Baja</td>
+            <td>Alta</td>
+          </tr>
+          <tr>
+            <td>Uso típico</td>
+            <td>Bloqueos generales</td>
+            <td>Políticas específicas y detalladas</td>
+          </tr>
+          <tr>
+            <td>Eficiencia</td>
+            <td>Mayor</td>
+            <td>Menor</td>
+          </tr>
+          <tr>
+            <td>Ejemplo</td>
+            <td>Bloquear host problemático</td>
+            <td>Permitir solo HTTP hacia un servidor</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr>
+
+    <h2>🛠️ Troubleshooting – Problemas comunes</h2>
+    <div style="overflow-x:auto;">
+      <table border="1" cellpadding="8">
+        <thead>
+          <tr>
+            <th>💥 Problema</th>
+            <th>🔍 Causa</th>
+            <th>🛠 Solución</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Router no aparece</td>
+            <td>No hay imágenes/plantillas cargadas</td>
+            <td>Cargar imagen en <strong>Preferences → Dynamips/IOU/VM → Add</strong></td>
+          </tr>
+          <tr>
+            <td>Router no enciende</td>
+            <td>Imagen corrupta o RAM insuficiente</td>
+            <td>Reimportar la imagen y asignar ≥ <strong>256 MB</strong></td>
+          </tr>
+          <tr>
+            <td>Consola no abre</td>
+            <td>Cliente Telnet/Consola no configurado</td>
+            <td>Configurar en <strong>Preferences → Console Applications</strong></td>
+          </tr>
+          <tr>
+            <td>Sin conexión</td>
+            <td>Interfaces apagadas o sin IP</td>
+            <td>Usar <code>show ip interface brief</code> y <code>no shutdown</code></td>
+          </tr>
+          <tr>
+            <td>Ping falla</td>
+            <td>IP/máscara incorrecta en router/PC</td>
+            <td>Verificar direcciones y máscara /24 en ambos extremos</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr>
+
+    <h2>📚 Referencias</h2>
+    <ul>
+      <li>GNS3 Team. (2024). <a href="https://docs.gns3.com" target="_blank">GNS3 Documentation</a></li>
+      <li>Behringer, R. (2023). <em>Network Simulation with GNS3</em>. Packt Publishing.</li>
+      <li>Cisco Systems. (2024). <a href="https://www.cisco.com" target="_blank">Cisco IOS Command Reference</a></li>
+      <li>Wikipedia. (2025). <a href="https://es.wikipedia.org/wiki/GNS3" target="_blank">Graphical Network Simulator-3</a></li>
+    </ul>
+
+  </main>
+
+  <div data-include="footer"></div>
+  <script src="assets/js/scripts.js"></script>
+</body>
+</html>
