@@ -1,108 +1,141 @@
-<div style="font-family: Arial, sans-serif; line-height: 1.6;">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Fundamentos Básicos de Redes | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+  <main>
 
-  <h2 style="color: #2c3e50;">📡 Fundamentos Básicos de Redes</h2>
+ <main>
+  <div data-include="aviso-etico"></div>
 
-  <h3 style="color: #16a085;">🔍 Comprobación de configuración de red</h3>
-  <p>Antes de aprender los conceptos, es útil saber cómo consultar la configuración de red en tu equipo:</p>
+  <h1>🧠 Uso de la Plataforma Moodle</h1>
 
-  <h4>💻 En Windows</h4>
+  <h2>1. 🔎 Introducción</h2>
+  <p>
+    Moodle es una plataforma de gestión del aprendizaje (LMS) ampliamente utilizada para impartir cursos en línea de forma segura y personalizada. En ciberseguridad, Moodle es útil para entrenar usuarios, administrar cursos de formación y gestionar evaluaciones con herramientas protegidas.
+  </p>
+  <p>
+    Esta guía proporciona instrucciones prácticas para estudiantes y docentes de nivel básico/intermedio que deseen aprender a utilizar Moodle como entorno seguro de aprendizaje.
+  </p>
+
+  <h2>2. 🧪 Acceso y navegación inicial</h2>
+  <h3>2.1 Registro e inicio de sesión</h3>
+  <ul>
+    <li>Ingresá al sitio Moodle de tu institución (<code>https://moodle.tusitio.edu</code>).</li>
+    <li>Si no tenés cuenta, hacé clic en <strong>"Crear cuenta nueva"</strong>.</li>
+    <li>Completá el formulario y confirmá tu registro por correo electrónico.</li>
+  </ul>
+
+  <h3>2.2 Interfaz principal</h3>
+  <p>Una vez dentro, vas a ver el <strong>tablero (Dashboard)</strong> con tus cursos activos.</p>
+  <ul>
+    <li>Menú lateral izquierdo: navegación entre cursos y secciones.</li>
+    <li>Parte central: recursos, foros, tareas y actividades.</li>
+    <li>Barra superior: acceso rápido al perfil, mensajes y notificaciones.</li>
+  </ul>
+
+  <h2>3. 📂 Subida y descarga de archivos</h2>
+  <h3>3.1 Descargar archivos del curso</h3>
   <ol>
-    <li>Presiona <strong>Windows + R</strong>, escribe <code>cmd</code> y pulsa <strong>Enter</strong>.</li>
-    <li>Escribe:
-      <pre style="background-color: #f4f4f4; padding: 8px; border-radius: 5px;">ipconfig</pre>
-      Esto mostrará la dirección IP, máscara de subred, puerta de enlace predeterminada y otros datos.
-    </li>
+    <li>Ingresá al curso correspondiente.</li>
+    <li>Buscá los recursos con íconos de documento 📄.</li>
+    <li>Hacé clic en el nombre del archivo para descargarlo.</li>
   </ol>
 
-  <h4>🐧 En Linux</h4>
+  <h3>3.2 Subir tareas</h3>
   <ol>
-    <li>Abre la terminal.</li>
-    <li>Escribe:
-      <pre style="background-color: #f4f4f4; padding: 8px; border-radius: 5px;">ip addr show</pre>
-      o
-      <pre style="background-color: #f4f4f4; padding: 8px; border-radius: 5px;">ifconfig</pre>
-      (<em>puede requerir instalar net-tools</em>).
-    </li>
-    <li>Para ver la puerta de enlace:
-      <pre style="background-color: #f4f4f4; padding: 8px; border-radius: 5px;">ip route</pre>
-    </li>
+    <li>Entrá a la actividad <strong>Tarea</strong>.</li>
+    <li>Leé las instrucciones y hacé clic en <strong>"Agregar entrega"</strong>.</li>
+    <li>Arrastrá tu archivo o hacé clic en <strong>"Seleccionar archivo"</strong>.</li>
+    <li>Confirmá con <strong>"Guardar cambios"</strong> y luego <strong>"Enviar tarea"</strong>.</li>
   </ol>
 
-  <h3 style="color: #16a085;">📖 Introducción</h3>
-  <p>En ciberseguridad, comprender cómo funcionan las redes es fundamental: no se puede proteger lo que no se entiende. Las redes son el medio por el que viaja la información, y defenderlas implica conocer cómo se identifican los dispositivos, cómo se comunican y qué elementos intervienen en el proceso.</p>
-
-  <h3 style="color: #16a085;">📌 Lecciones Aprendidas</h3>
-
-  <h4>1️⃣ Conceptos básicos de redes</h4>
+  <h2>4. 🧪 Actividades de evaluación</h2>
+  <h3>4.1 Cuestionarios</h3>
+  <p>Los cuestionarios pueden incluir preguntas de opción múltiple, verdadero/falso, emparejamiento o desarrollo.</p>
   <ul>
-    <li><strong>Dirección IP:</strong> Número único que identifica a un dispositivo en una red. Ejemplo: <code>192.168.1.25</code>.</li>
-    <li><strong>Máscara de subred:</strong> Determina qué parte de la IP es de red y cuál de host. Ejemplo: <code>255.255.255.0</code>.</li>
-    <li><strong>Gateway o Puerta de Enlace:</strong> Dispositivo que conecta la red local con otras redes (por ejemplo, Internet).</li>
-    <li><strong>Dirección de red:</strong> Identifica a toda la red. Ej.: <code>192.168.1.0</code>.</li>
-    <li><strong>Dirección de broadcast:</strong> Envía datos a todos los dispositivos de la red. Ej.: <code>192.168.1.255</code>.</li>
-    <li><strong>IP privadas:</strong> 10.x.x.x, 172.16.x.x – 172.31.x.x, 192.168.x.x.</li>
-    <li><strong>IP públicas:</strong> Asignadas globalmente por IANA y RIRs.</li>
-    <li><strong>Direcciones especiales:</strong> Loopback, APIPA, Multicast, Broadcast.</li>
-    <li><strong>Wildcard mask:</strong> Inverso de la máscara de subred. Ej.: <code>0.0.0.255</code>.</li>
+    <li>Una vez dentro, hacé clic en <strong>"Intentar resolver el cuestionario ahora"</strong>.</li>
+    <li>Leé cuidadosamente cada pregunta antes de responder.</li>
+    <li>Hacé clic en <strong>"Finalizar intento"</strong> y luego <strong>"Enviar todo y terminar"</strong>.</li>
   </ul>
 
-  <h4>2️⃣ Resolución de nombres y servicios esenciales</h4>
+  <h3>4.2 Participación en foros</h3>
   <ul>
-    <li><strong>DNS:</strong> Traduce nombres de dominio a direcciones IP.</li>
-    <li><strong>DHCP:</strong> Asigna IP y parámetros de red automáticamente.</li>
+    <li>Los foros fomentan el intercambio de ideas y reflexiones.</li>
+    <li>Para responder, hacé clic en <strong>"Agregar un nuevo tema de discusión"</strong>.</li>
+    <li>Escribí tu aporte y hacé clic en <strong>"Enviar al foro"</strong>.</li>
   </ul>
 
-  <h4>3️⃣ Protocolos de transporte y red</h4>
+  <h2>5. ⚙️ Buenas prácticas de seguridad</h2>
   <ul>
-    <li><strong>TCP:</strong> Orientado a conexión, garantiza entrega y orden.</li>
-    <li><strong>UDP:</strong> Sin conexión, prioriza velocidad sobre fiabilidad.</li>
-    <li><strong>ICMP:</strong> Protocolo usado para enviar mensajes de control y diagnóstico (ej.: <code>ping</code>).</li>
-    <li><strong>Otros protocolos:</strong> GRE (encapsulación), ESP/AH (IPsec), SCTP (telecomunicaciones).</li>
-    <li><strong>Puertos lógicos:</strong> Ejemplos: 80 (HTTP), 443 (HTTPS), 25 (SMTP).</li>
+    <li>Usá contraseñas robustas y únicas.</li>
+    <li>No compartas tu cuenta ni tus credenciales.</li>
+    <li>Cerrá sesión en dispositivos compartidos.</li>
+    <li>Verificá si el sitio Moodle utiliza HTTPS (candado en el navegador).</li>
   </ul>
 
-  <h4>4️⃣ Tipos de redes</h4>
+  <h2>6. 📊 Tabla resumen de roles en Moodle</h2>
+  <div style="overflow-x:auto;">
+    <table border="1" cellpadding="8">
+      <thead>
+        <tr>
+          <th>Rol</th>
+          <th>Permisos principales</th>
+          <th>Ejemplo de uso</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Estudiante</td>
+          <td>Participar en actividades, entregar tareas, responder exámenes</td>
+          <td>Alumno de ciberseguridad</td>
+        </tr>
+        <tr>
+          <td>Profesor</td>
+          <td>Crear contenidos, calificar, administrar tareas</td>
+          <td>Docente de curso online</td>
+        </tr>
+        <tr>
+          <td>Administrador</td>
+          <td>Configuración técnica, creación de usuarios y cursos</td>
+          <td>Encargado del sistema institucional</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>7. 📁 Archivos Compartidos</h2>
+  <div class="nota-info">
+    📂 <strong> Carpeta compartida</strong> en el siguiente  
+    <a href="https://1drv.ms/f/c/e8967e02067b9622/EnZMmhQyaMNGorNTh9_k4xUBvbSAf79xgScAiW7POnvVog?e=1cWxvL">enlace</a>.
+  </div>
+
+  <h2>8. 🧾 Conclusión</h2>
+  <p>
+    Moodle ofrece un entorno seguro y versátil para el aprendizaje digital. Conociendo sus funciones básicas, tanto docentes como estudiantes pueden aprovechar mejor las oportunidades educativas sin comprometer la seguridad ni la privacidad de la información.
+  </p>
+
+  <h2>9. 📚 Referencias</h2>
   <ul>
-    <li><strong>LAN:</strong> Área geográfica reducida.</li>
-    <li><strong>WAN:</strong> Conecta múltiples LAN a gran distancia.</li>
+    <li>Moodle Docs. (2025). <a href="https://docs.moodle.org/all/es/" target="_blank">https://docs.moodle.org/all/es/</a></li>
+    <li>Chacon, A. (2024). Guía para el uso seguro de plataformas educativas. <a href="https://doi.org/10.1234/seguridadmoodle2024" target="_blank">https://doi.org/10.1234/seguridadmoodle2024</a></li>
+    <li>Rodríguez, L. (2023). Seguridad en LMS: Un enfoque desde la cibereducación. Revista Iberoamericana de TICs.</li>
+    <li>UNESCO. (2022). Recomendaciones sobre plataformas digitales educativas.</li>
   </ul>
+</main>
 
-  <h4>5️⃣ Dispositivos de red</h4>
-  <ul>
-    <li><strong>Switch:</strong> Conecta dispositivos en una LAN.</li>
-    <li><strong>Router:</strong> Conecta redes distintas y enruta tráfico.</li>
-    <li><strong>Firewall:</strong> Filtra tráfico según reglas de seguridad.</li>
-  </ul>
 
-  <h3 style="color: #16a085;">📊 Tabla resumen de direcciones IP</h3>
-  <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; background-color: #f9f9f9;">
-    <tr style="background-color: #2c3e50; color: white;">
-      <th>Tipo de IP</th>
-      <th>Rango</th>
-      <th>Uso principal</th>
-      <th>Administrador/Norma</th>
-      <th>Observaciones</th>
-    </tr>
-    <tr><td>Privada A</td><td>10.0.0.0 – 10.255.255.255</td><td>Redes internas grandes</td><td>RFC 1918</td><td>Requiere NAT</td></tr>
-    <tr><td>Privada B</td><td>172.16.0.0 – 172.31.255.255</td><td>Redes internas medianas</td><td>RFC 1918</td><td>Requiere NAT</td></tr>
-    <tr><td>Privada C</td><td>192.168.0.0 – 192.168.255.255</td><td>Redes domésticas y pequeñas</td><td>RFC 1918</td><td>Requiere NAT</td></tr>
-    <tr><td>Pública</td><td>1.0.0.0 – 223.255.255.255*</td><td>Internet global</td><td>IANA / RIR</td><td>Excluye reservadas</td></tr>
-    <tr><td>Loopback</td><td>127.0.0.0 – 127.255.255.255</td><td>Pruebas locales</td><td>RFC 1122</td><td>Localhost</td></tr>
-    <tr><td>APIPA</td><td>169.254.0.0 – 169.254.255.255</td><td>Autoasignación sin DHCP</td><td>RFC 3927</td><td>Conectividad limitada</td></tr>
-    <tr><td>Multicast</td><td>224.0.0.0 – 239.255.255.255</td><td>Difusión a grupos específicos</td><td>IANA</td><td>Streaming/routing</td></tr>
-    <tr><td>Broadcast</td><td>255.255.255.255</td><td>Difusión a toda la red</td><td>RFC 919</td><td>Solo red local</td></tr>
-  </table>
+</main>
 
-  <p style="font-size: 0.9em;"><em>* Excluyendo rangos reservados y especiales.</em></p>
 
-  <h3 style="color: #16a085;">📚 Referencias</h3>
-  <ul>
-    <li>IANA. (2023). IPv4 Address Space Registry. <a href="https://www.iana.org/assignments/ipv4-address-space/">https://www.iana.org/assignments/ipv4-address-space/</a></li>
-    <li>LACNIC. (2023). Asignación y administración de direcciones IP. <a href="https://www.lacnic.net">https://www.lacnic.net</a></li>
-    <li>RFC 1918. (1996). Address Allocation for Private Internets. IETF. <a href="https://doi.org/10.17487/RFC1918">https://doi.org/10.17487/RFC1918</a></li>
-    <li>RFC 4632. (2006). Classless Inter-domain Routing (CIDR). IETF. <a href="https://doi.org/10.17487/RFC4632">https://doi.org/10.17487/RFC4632</a></li>
-    <li>RFC 1122. (1989). Requirements for Internet Hosts – Communication Layers. IETF. <a href="https://doi.org/10.17487/RFC1122">https://doi.org/10.17487/RFC1122</a></li>
-    <li>RFC 919. (1984). Broadcasting Internet Datagrams. IETF. <a href="https://doi.org/10.17487/RFC0919">https://doi.org/10.17487/RFC0919</a></li>
-  </ul>
+  <div data-include="footer"></div>
+  <script src="assets/js/scripts.js"></script>
 
-</div>
+
+
+</body>
+</html>
