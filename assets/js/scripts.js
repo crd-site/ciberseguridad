@@ -8,3 +8,13 @@ function includeHTML() {
   });
 }
 document.addEventListener("DOMContentLoaded", includeHTML);
+// Bloquea copiado fuera de <code>
+document.addEventListener("copy", function (event) {
+  let selection = window.getSelection().toString();
+  let parent = window.getSelection().anchorNode?.parentElement;
+
+  if (!parent || parent.tagName.toLowerCase() !== "code") {
+    event.preventDefault(); // Solo bloquea, no muestra mensajes
+  }
+});
+

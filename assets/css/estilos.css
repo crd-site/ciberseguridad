@@ -202,3 +202,19 @@ body::after {
 .nota strong, .nota-advertencia strong, .nota-info strong {
   font-size: 1.1rem;
 }
+
+/* ... Todo tu CSS como ya está ... */
+
+/* Para permitir selección solo en <code> */
+body {
+  user-select: none;
+}
+
+code {
+  user-select: text;
+  background-color: #1e1e1e;
+  color: #00ff00; /* verde limón */
+  padding: 3px 5px;
+  border-radius: 4px;
+}
+
