@@ -20,43 +20,31 @@ document.addEventListener("copy", function (event) {
 
 
 
+form.addEventListener("submit", function (e) {
+  e.preventDefault();
 
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("form-reportar");
-  const comentario = document.getElementById("comentario");
-  const mensaje = document.getElementById("mensaje-envio");
+  const formData = new FormData();
+  formData.append("titulo", document.title);
+  formData.append("archivo", window.location.pathname.split("/").pop());
+  formData.append("comentario", comentario.value);
+  formData.append("fecha", new Date().toISOString());
 
-  if (!form) return;
-
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    const data = {
-      titulo: document.title,
-      archivo: window.location.pathname.split("/").pop(),
-      comentario: comentario.value
-    };
-
-    fetch("https://script.google.com/macros/s/XXXX/exec", {
-      method: "POST",
-      body: JSON.stringify(data),
-      headers: {
-        "Content-Type": "application/json"
+  fetch("https://script.google.com/macros/s/AKfycbw3T9w49wc3iPLRhbfUJmfvMuJWNlFkyY7nlzMTAlYXXr6dsAT3IbIljrEVj-rDWHk/exec", {
+    method: "POST",
+    body: formData,
+  })
+    .then((res) => res.text())
+    .then((text) => {
+      if (text === "OK") {
+        mensaje.textContent = "✅ Comentario enviado correctamente.";
+        comentario.value = "";
+      } else {
+        mensaje.textContent = "❌ Error al enviar. Intenta nuevamente.";
       }
     })
-      .then((res) => res.text())
-      .then((text) => {
-        if (text === "OK") {
-          mensaje.textContent = "✅ Comentario enviado correctamente.";
-          comentario.value = "";
-        } else {
-          mensaje.textContent = "❌ Error al enviar. Intenta nuevamente.";
-        }
-      })
-      .catch((err) => {
-        mensaje.textContent = "❌ Error de red. Verifica tu conexión.";
-        console.error(err);
-      });
-  });
+    .catch((err) => {
+      mensaje.textContent = "❌ Error de red. Verifica tu conexión.";
+      console.error(err);
+    });
 });
 
