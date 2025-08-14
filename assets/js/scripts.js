@@ -19,24 +19,21 @@ document.addEventListener("copy", function (event) {
 });
 
 
-
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("form-reportar");
-  if (!form) return;
-
-  const comentario = document.getElementById("comentario");
   const mensaje = document.getElementById("mensaje-envio");
+
+  // Asignar valores automáticos
+  document.getElementById("titulo").value = document.title;
+  document.getElementById("archivo").value = window.location.pathname.split("/").pop();
+  document.getElementById("fecha").value = new Date().toISOString();
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
 
-    const formData = new FormData();
-    formData.append("titulo", document.title);
-    formData.append("archivo", window.location.pathname.split("/").pop());
-    formData.append("comentario", comentario.value);
-    formData.append("fecha", new Date().toISOString());
+    const formData = new FormData(form);
 
-    fetch("https://script.google.com/macros/s/PASTE_AQUI_TU_URL_EXEC/exec", {
+    fetch("https://script.google.com/macros/s/XXXXXXXXXXXXXXX/exec", {
       method: "POST",
       body: formData,
     })
@@ -44,13 +41,13 @@ document.addEventListener("DOMContentLoaded", () => {
       .then((text) => {
         if (text === "OK") {
           mensaje.textContent = "✅ Comentario enviado correctamente.";
-          comentario.value = "";
+          form.reset();
         } else {
-          mensaje.textContent = "❌ Error al enviar. Intenta nuevamente.";
+          mensaje.textContent = "❌ Error en el envío.";
         }
       })
       .catch((err) => {
-        mensaje.textContent = "❌ Error de red. Verifica tu conexión.";
+        mensaje.textContent = "❌ Error de red.";
         console.error(err);
       });
   });
