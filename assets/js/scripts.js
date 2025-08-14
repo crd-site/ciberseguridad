@@ -20,31 +20,38 @@ document.addEventListener("copy", function (event) {
 
 
 
-form.addEventListener("submit", function (e) {
-  e.preventDefault();
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("form-reportar");
+  if (!form) return;
 
-  const formData = new FormData();
-  formData.append("titulo", document.title);
-  formData.append("archivo", window.location.pathname.split("/").pop());
-  formData.append("comentario", comentario.value);
-  formData.append("fecha", new Date().toISOString());
+  const comentario = document.getElementById("comentario");
+  const mensaje = document.getElementById("mensaje-envio");
 
-  fetch("https://script.google.com/macros/s/AKfycbw3T9w49wc3iPLRhbfUJmfvMuJWNlFkyY7nlzMTAlYXXr6dsAT3IbIljrEVj-rDWHk/exec", {
-    method: "POST",
-    body: formData,
-  })
-    .then((res) => res.text())
-    .then((text) => {
-      if (text === "OK") {
-        mensaje.textContent = "✅ Comentario enviado correctamente.";
-        comentario.value = "";
-      } else {
-        mensaje.textContent = "❌ Error al enviar. Intenta nuevamente.";
-      }
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const formData = new FormData();
+    formData.append("titulo", document.title);
+    formData.append("archivo", window.location.pathname.split("/").pop());
+    formData.append("comentario", comentario.value);
+    formData.append("fecha", new Date().toISOString());
+
+    fetch("https://script.google.com/macros/s/PASTE_AQUI_TU_URL_EXEC/exec", {
+      method: "POST",
+      body: formData,
     })
-    .catch((err) => {
-      mensaje.textContent = "❌ Error de red. Verifica tu conexión.";
-      console.error(err);
-    });
+      .then((res) => res.text())
+      .then((text) => {
+        if (text === "OK") {
+          mensaje.textContent = "✅ Comentario enviado correctamente.";
+          comentario.value = "";
+        } else {
+          mensaje.textContent = "❌ Error al enviar. Intenta nuevamente.";
+        }
+      })
+      .catch((err) => {
+        mensaje.textContent = "❌ Error de red. Verifica tu conexión.";
+        console.error(err);
+      });
+  });
 });
-

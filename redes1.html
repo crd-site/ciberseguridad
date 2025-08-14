@@ -284,12 +284,16 @@
 
 
 
-<form id="form-reportar">
-  <label for="comentario"><strong>¿Notaste un error o enlace roto?</strong></label><br>
-  <textarea id="comentario" placeholder="Describe el error..." required></textarea><br>
-  <button type="submit">Enviar comentarios</button>
-  <p id="mensaje-envio"></p>
-</form>
+<section id="reportar-error" style="margin-top: 40px;">
+  <h3>📢 Notificar error o enlace roto</h3>
+  <form id="form-reportar">
+    <label for="comentario">Describe brevemente el problema encontrado:</label><br>
+    <textarea id="comentario" name="comentario" rows="4" cols="50" required></textarea><br><br>
+    <button type="submit">Enviar reporte</button>
+    <p id="mensaje-envio" style="margin-top: 10px;"></p>
+  </form>
+</section>
+
 
 
 
