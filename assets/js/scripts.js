@@ -18,10 +18,15 @@ document.addEventListener("copy", function (event) {
   }
 });
 
+
+
+
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("form-reportar");
   const comentario = document.getElementById("comentario");
   const mensaje = document.getElementById("mensaje-envio");
+
+  if (!form) return;
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -32,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
       comentario: comentario.value
     };
 
-    fetch("https://script.google.com/macros/s/AKfycbyL3B4fo__7ao5MsfC59xP79ZOKMyAIbi-b1QKbuTjpoqDTXWaEqRkUk_EKZoPnuJc6/exec", {
+    fetch("https://script.google.com/macros/s/XXXX/exec", {
       method: "POST",
       body: JSON.stringify(data),
       headers: {
@@ -54,3 +59,4 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   });
 });
+
