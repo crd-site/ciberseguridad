@@ -218,3 +218,38 @@ code {
   border-radius: 4px;
 }
 
+.form-comentario {
+  display: flex;
+  align-items: center; /* CENTRA VERTICALMENTE el botón respecto al textarea */
+  gap: 10px;           /* Espacio entre textarea y botón */
+}
+
+#comentario {
+  width: 60%;
+  height: 50px; /* Aumentado para que el botón se centre visualmente */
+  font-size: 16px;
+  padding: 10px;
+  border-radius: 6px;
+  resize: vertical;
+  background-color: #aaa7a7; /* gris claro */
+  color: #000;
+}
+
+/* Estilo del botón */
+button[type="submit"] {
+  padding: 10px 16px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: #00375c;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-family: 'Segoe UI', sans-serif;
+  height: auto; /* Se adapta al contenido */
+  align-self: center; /* opcional aquí */
+}
+
+button[type="submit"]:hover {
+  background-color: #005fa3;
+}

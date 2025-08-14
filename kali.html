@@ -125,6 +125,17 @@
     <li>Tomá snapshots antes de hacer pruebas avanzadas</li>
   </ul>
 
+      <div class="nota-info">
+      <form id="form-reportar">
+        <input type="hidden" id="titulo" name="titulo">
+        <input type="hidden" id="archivo" name="archivo">
+        <input type="hidden" id="fecha" name="fecha">
+        <textarea id="comentario" name="comentario" placeholder="Escribí tu comentario aquí" required></textarea>
+        <button type="submit">Enviar</button>
+      </form>
+      <div id="mensaje-envio" style="margin-top:50px; color: green;"></div>
+</div>
+
 </main>
 <div data-include="footer"></div>
 <script src="assets/js/scripts.js"></script>
