@@ -53,3 +53,39 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   });
 });
+
+
+
+
+
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const elementos = document.querySelectorAll(
+    "h1, h2, h3, h4, p, ol, ul, table, pre, code, hr, form, .nota, .nota-advertencia, .nota-info, [data-include]"
+  );
+
+elementos.forEach((el, index) => {
+  const groupIndex = Math.floor(index / 5); // grupos de 5 elementos
+  const directions = ["reveal-top", "reveal-right", "reveal-bottom", "reveal-left"];
+  const direction = directions[groupIndex % directions.length];
+
+  el.classList.add("reveal", direction);
+});
+
+
+  const observer = new IntersectionObserver((entradas) => {
+    entradas.forEach(entrada => {
+      if (entrada.isIntersecting) {
+        entrada.target.classList.add("visible");
+      } else {
+        entrada.target.classList.remove("visible"); // Oculta cuando sale
+      }
+    });
+  }, { threshold: 0.15 });
+  rootMargin: "0px 0px -10% 0px" // Pequeño margen para evitar flicker en el borde
+
+  document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
+});
+
