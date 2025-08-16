@@ -372,19 +372,15 @@ pre.reveal, code.reveal {
 }
 
 
-.h5p-section {
-  text-align: center;
+.video-container {
+  display: flex;
+  justify-content: center; /* centra horizontalmente */
+  margin: 20px 0;          /* espacio arriba y abajo */
 }
 
-.h5p-container iframe {
-  border: none;
-  display: inline-block;
-  margin: 0 auto;
+.video-container iframe {
+  max-width: 100%;   /* evita que se desborde en pantallas pequeñas */
+  border: none;      /* quita borde si lo quieres limpio */
 }
 
-.h5p-container iframe {
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
 
