@@ -1,3 +1,4 @@
+
 // Carga dinámica de encabezado y pie de página
 function includeHTML() {
   document.querySelectorAll('[data-include]').forEach(el => {
@@ -8,6 +9,8 @@ function includeHTML() {
   });
 }
 document.addEventListener("DOMContentLoaded", includeHTML);
+
+
 // Bloquea copiado fuera de <code>
 document.addEventListener("copy", function (event) {
   let selection = window.getSelection().toString();

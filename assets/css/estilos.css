@@ -386,8 +386,7 @@ pre.reveal, code.reveal {
 /* Iframes embebidos de LUMI */
 .lumi-iframe {
   width: 100%;
-  height: 600px; /* 👈 ALTURA REALISTA PARA H5P */
-   aspect-ratio: 16 / 9;  /* alto proporcional al ancho */
+  height: 610px; /* 👈 ALTURA REALISTA PARA H5P */  
   border: none;
    border-radius: 8px;
   background-color: rgb(255, 255, 255);
