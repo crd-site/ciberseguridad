@@ -381,3 +381,10 @@ pre.reveal, code.reveal {
   display: inline-block;
   margin: 0 auto;
 }
+
+.h5p-container iframe {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
