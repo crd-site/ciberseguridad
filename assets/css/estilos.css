@@ -373,6 +373,10 @@ pre.reveal, code.reveal {
 
 
 
+iframe {
+  overflow: hidden !important;
+  scrollbar-width: none !important;
+}
 
 
 /* Estilos para iframe con marco visual y fondo blanco */
