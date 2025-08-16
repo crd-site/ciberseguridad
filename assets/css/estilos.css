@@ -370,3 +370,14 @@ pre.reveal, code.reveal {
   opacity: 1;
   transform: translateY(0) scale(1);
 }
+
+
+.h5p-section {
+  text-align: center;
+}
+
+.h5p-container iframe {
+  border: none;
+  display: inline-block;
+  margin: 0 auto;
+}
