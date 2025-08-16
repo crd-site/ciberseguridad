@@ -372,30 +372,25 @@ pre.reveal, code.reveal {
 }
 
 
-
-iframe {
-  overflow: hidden !important;
-  scrollbar-width: none !important;
-}
-
-
-/* Estilos para iframe con marco visual y fondo blanco */
-.iframe-box iframe,
-.iframe-wrapper iframe {
-  width: 100%;
-  max-width: 1000px;
-  aspect-ratio: 16 / 9; /* mantiene proporción automática */
-  border: none;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  display: block;
-}
-
-/* Contenedor con fondo blanco */
+/* Wrapper para LUMI (H5P) */
 .iframe-wrapper {
   background-color: white;
   padding: 1rem;
+  margin: 2rem auto;
+  max-width: 1000px;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
 }
+
+/* Iframes embebidos de LUMI */
+.lumi-iframe {
+  width: 100%;
+  height: 590px; /* 👈 ALTURA REALISTA PARA H5P */
+  border: none;
+  background-color: white;
+  display: block;
+}
+
+
+
