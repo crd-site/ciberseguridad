@@ -380,9 +380,9 @@ pre.reveal, code.reveal {
 .iframe-wrapper iframe {
   width: 100%;
   max-width: 1000px;
-  min-height: 500px;
+  aspect-ratio: 16 / 9; /* mantiene proporción automática */
   border: none;
-  background-color: white; /* fondo blanco */
+  background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   display: block;
