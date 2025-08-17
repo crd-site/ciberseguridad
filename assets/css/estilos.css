@@ -244,7 +244,7 @@ body::after {
 
 /* Para permitir selección solo en <code> */
 body {
-  user-select: none;
+  //user-select: none;
 }
 
 code {
