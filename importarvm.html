@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía Completa: Importar VMs a GNS3 | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+
+  <main>
+
+    <h1>📘 Guía Completa: Importar VMs a GNS3, Configurar Red y Probar Conectividad (Topología Final)</h1>
+
+    <hr>
+
+    <h2>📥 Paso Previo: Descargar la VM WebServer</h2>
+    <ol>
+      <li>Accede a la carpeta compartida (enlace proporcionado en clase).</li>
+      <li>Introduce la contraseña usada durante la clase.</li>
+      <li>Dirígete a la ruta: <strong>VMs/ A. WebServer.zip</strong></li>
+      <li>Descarga y descomprime el archivo .zip en una ubicación accesible (ej: Documentos\VMs\WebServer).</li>
+    </ol>
+<h3 >Archivos Compartidos </h3>
+  <div class="nota-info">
+    📂 <strong> Carpeta compartida</strong> en el siguiente  
+    <a href="https://1drv.ms/f/c/e8967e02067b9622/EnZMmhQyaMNGorNTh9_k4xUBvbSAf79xgScAiW7POnvVog?e=1cWxvL">enlace</a>.
+     <p style="margin-top: 10px; font-weight: bold;">    
+  </p>
+  </div>
+    <hr>
+
+    <h2>📦 Paso 0: Importar la VM WebServer en VMware</h2>
+    <ol>
+      <li>Abre VMware Workstation o VMware Player.</li>
+      <li>Menú: <strong>File &gt; Open...</strong></li>
+      <li>Selecciona el archivo <code>WebServer.ovf</code> y haz clic en <strong>Open</strong>.</li>
+      <li>Ajusta nombre/ruta si deseas y haz clic en <strong>Import</strong>.</li>
+    </ol>
+    <p>🔴 <strong>La VM debe estar apagada antes de usarla en GNS3.</strong></p>
+
+    <hr>
+
+    <h2>🔧 Paso 1: Agregar la VM a GNS3</h2>
+    <ol>
+      <li>Abre GNS3 como Administrador.</li>
+      <li>Ve a: <strong>Edit &gt; Preferences &gt; VMware &gt; VMware VMs</strong>.</li>
+      <li>Haz clic en <strong>New</strong>.</li>
+      <li>Selecciona: ✅ “Run this VMware VM on my local computer”.</li>
+      <li>En la lista de VMs (VM List), selecciona <strong>WebServer</strong> → <strong>Finish</strong>.</li>
+    </ol>
+
+    <hr>
+
+    <h2>🧩 Paso 2: Insertar la VM al proyecto</h2>
+    <ol>
+      <li>En el panel lateral de GNS3, arrastra la VM al canvas.</li>
+      <li>Haz clic derecho → <strong>Configure</strong> sobre la VM.</li>
+    </ol>
+
+    <hr>
+
+    <h2>🌐 Paso 3: Configurar adaptadores de red</h2>
+    <ol>
+      <li>En la pestaña <strong>Network</strong>, activa: ✅ “Allow GNS3 to override non custom VMware adapter”.</li>
+      <li>Haz clic en <strong>Apply</strong> y luego en <strong>OK</strong>.</li>
+    </ol>
+
+    <hr>
+
+    <h2>🖧 Paso 4: Configuración de Red en WebServer (Debian CLI)</h2>
+    <p>Ahora el WebServer está en VLAN 103, con:</p>
+    <p><strong>IP:</strong> 192.168.3.50/24 – <strong>Gateway:</strong> 192.168.3.1</p>
+
+<pre><code># Liberar DHCP y limpiar IPs previas
+sudo dhclient -r eth0
+sudo ip addr flush dev eth0
+
+# Asignar IP y máscara
+sudo ip addr add 192.168.3.10/24 dev eth0
+sudo ip link set eth0 up
+
+# Agregar gateway
+sudo ip route add default via 192.168.3.1
+
+# Configurar DNS
+echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+
+# Verificar:
+ip a
+ip route
+</code></pre>
+
+    <hr>
+
+    <h2>🧪 Paso 5: Pruebas de Conectividad en la Red</h2>
+
+    <figure>
+      <img src="assets/img/ArqRed1.png" alt="Topología de Red" style="width:70%; border-radius: 8px; margin: 20px 0;">
+      <figcaption><strong>Figura 1:</strong> Arquitectura de red</figcaption>
+    </figure>
+
+    <h3>VLANs y Direcciones (según diagrama final):</h3>
+    <ul>
+      <li><strong>VLAN 100 – Red Invitados</strong><br>
+        PC-1 → 192.168.1.2 /24, GW 192.168.1.1<br>
+        Kali → 192.168.1.10 /24, GW 192.168.1.1</li>
+      <li><strong>VLAN 101 – Red Empleados</strong><br>
+        PC-2 → 10.1.1.2 /24, GW 10.1.1.1</li>
+      <li><strong>VLAN 102 – Red Servidores Producción</strong><br>
+        PC-3 → 192.168.2.3 /24, GW 192.168.2.1</li>
+      <li><strong>VLAN 103 – Red Recursos Compartidos</strong><br>
+        PC-4 → 192.168.3.2 /24, GW 192.168.3.1<br>
+        Web Server → 192.168.3.10 /24, GW 192.168.3.1</li>
+    </ul>
+
+    <h3>Ejemplos de Configuración en VPCS</h3>
+<pre><code># PC-1 (Invitados)
+ip 192.168.1.2 255.255.255.0 192.168.1.1
+ping 192.168.1.1   # Gateway
+ping 192.168.3.10  # Web Server
+
+# PC-2 (Empleados)
+ip 10.1.1.2 255.255.255.0 10.1.1.1
+ping 192.168.2.3   # PC-3
+ping 192.168.3.10  # Web Server
+
+# PC-3 (Producción)
+ip 192.168.2.3 255.255.255.0 192.168.2.1
+ping 192.168.3.2   # PC-4
+ping 192.168.3.10  # Web Server
+
+# PC-4 (Recursos compartidos)
+ip 192.168.3.2 255.255.255.0 192.168.3.1
+ping 192.168.2.3   # PC-3
+</code></pre>
+
+    <hr>
+
+    <h2>🐱‍💻 Paso 6: Configuración de Kali Linux</h2>
+    <p>Kali ahora está en VLAN 100, con: <br>IP: <code>192.168.1.10/24</code> – Gateway: <code>192.168.1.1</code> – DNS: <code>8.8.8.8</code></p>
+
+<pre><code># Liberar DHCP
+sudo dhclient -r eth0
+
+# Limpiar IPs previas
+sudo ip addr flush dev eth0
+
+# Asignar IP estática
+sudo ip addr add 192.168.1.10/24 dev eth0
+sudo ip link set eth0 up
+
+# Asignar gateway
+sudo ip route add default via 192.168.1.1
+
+# Configurar DNS
+echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+
+# Pruebas:
+ping 192.168.1.1     # Gateway
+ping 192.168.1.2     # PC-1
+ping 192.168.3.10    # Web Server
+ping 8.8.8.8         # Internet
+
+# Verificar acceso Web desde Kali:
+curl http://192.168.3.50
+</code></pre>
+
+    <hr>
+
+    <h2>✅ Resultado Final</h2>
+    <ul>
+      <li>Todos los equipos tienen IP estática + gateway + DNS según su VLAN.</li>
+      <li>El router R1 enruta entre VLANs mediante subinterfaces dot1Q.</li>
+      <li>Kali y Web Server están integrados en la topología.</li>
+      <li>Se puede probar conectividad intra-VLAN, inter-VLAN y salida hacia Internet.</li>
+    </ul>
+
+  </main>
+
+  <div data-include="footer"></div>
+  <script src="assets/js/scripts.js"></script>
+
+</body>
+</html>

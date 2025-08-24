@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reconocimiento con Nmap | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+  <main>
+
+  <div data-include="aviso-etico"></div>
+
+  <h1>🛰️ Reconocimiento con Nmap en Kali Linux</h1>
+
+  <h2>🔎 Introducción</h2>
+  <p>
+    Un actor conecta un equipo (por ejemplo, Kali Linux) a la red local por <strong>Switch 1</strong> en <strong>VLAN 100</strong>.
+    Sin credenciales, puede realizar reconocimiento con <code>Nmap</code> para descubrir hosts, puertos y servicios. A continuación
+    se presenta un recorrido desde lo más simple a lo más elaborado. Cuando veas algo entre <code>&lt;&gt;</code> significa
+    que debes reemplazarlo según tu escenario.
+  </p>
+
+  <hr>
+
+  <h2>🟢 1) Nivel básico</h2>
+
+  <h3>1.1 • Descubrimiento de hosts (ping sweep (barrido))</h3>
+  <div class="nota">
+    💡 <strong>Observación:</strong> <code>Cuando veas algo entre &lt;ejemplo_a_reemplazar&gt; significa que debes reemplazarlo según tu escenario (incluyendo el &lt;&gt;)</code>
+  </div>
+  <pre><code>nmap -sn &lt;rango_de_red&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap -sn 192.168.1.0/24</code></pre>
+
+  <h3>1.2 • Puertos TCP comunes (top 1000)</h3>
+  <pre><code>nmap &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap 192.168.1.1</code></pre>
+
+  <h3>1.3 • Puertos específicos</h3>
+  <pre><code>nmap -p &lt;puertos&gt; &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplos:</p>
+  <pre><code>nmap -p 22,80,443 192.168.1.1
+nmap -p 1-1024 192.168.1.1</code></pre>
+
+  <h3>1.4 • Mostrar solo puertos abiertos</h3>
+  <pre><code>nmap --open &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap --open 192.168.1.1</code></pre>
+
+  <hr>
+
+  <h2>🟡 2) Nivel intermedio</h2>
+
+  <h3>2.1 • Detección de versiones de servicios</h3>
+  <pre><code>nmap -sV &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap -sV 192.168.2.3</code></pre>
+
+  <h3>2.2 • Identificación de sistema operativo</h3>
+  <pre><code>nmap -O &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap -O 192.168.3.1</code></pre>
+
+  <h3>2.3 • Todos los puertos TCP (1–65535)</h3>
+  <pre><code>nmap -p- &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap -p- 10.1.1.2</code></pre>
+
+  <h3>2.4 • Escaneo agresivo (todo en uno)</h3>
+  <pre><code>nmap -A &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap -A 192.168.2.3</code></pre>
+
+  <h3>2.5 • Guardar resultados</h3>
+  <div class="nota-info">
+    ℹ️ <strong>Info:</strong> Podés guardar y reutilizar la topología para otros proyectos.
+  </div>
+  <pre><code>nmap -oN &lt;archivo.txt&gt; &lt;ip_objetivo&gt;
+nmap -oX &lt;archivo.xml&gt; &lt;ip_objetivo&gt;
+nmap -oG &lt;archivo.gnmap&gt; &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap -oN r1.txt 192.168.1.1</code></pre>
+
+  <hr>
+
+  <h2>🔴 3) Nivel avanzado</h2>
+
+  <h3>3.1 • Escaneo UDP</h3>
+  <pre><code>nmap -sU &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap -sU 192.168.1.1</code></pre>
+
+  <h3>3.2 • Escaneo ACK (detección de firewall)</h3>
+  <div class="nota-advertencia">
+    ⚠️ <strong>Advertencia:</strong> No apagues la VM mientras haya un laboratorio en ejecución.
+  </div>
+  <pre><code>nmap -sA &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap -sA 192.168.3.1</code></pre>
+
+  <h3>3.3 • Scripts NSE</h3>
+  <pre><code>nmap --script &lt;nombre_script&gt; &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplos:</p>
+  <pre><code>nmap --script http-vuln* 192.168.1.1
+nmap --script smb* 192.168.2.3</code></pre>
+
+  <h3>3.4 • Fragmentar paquetes</h3>
+  <pre><code>nmap -f &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap -f 192.168.2.3</code></pre>
+
+  <h3>3.5 • Puerto de origen personalizado</h3>
+  <pre><code>nmap --source-port &lt;puerto&gt; &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap --source-port 53 192.168.1.1</code></pre>
+
+  <h3>3.6 • Motivo del estado del puerto</h3>
+  <pre><code>nmap --reason &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap --reason 192.168.1.1</code></pre>
+
+  <h3>3.7 • Incluir traceroute</h3>
+  <pre><code>nmap --traceroute &lt;ip_objetivo&gt;</code></pre>
+  <p>Ejemplo:</p>
+  <pre><code>nmap --traceroute 192.168.3.1</code></pre>
+
+  <hr>
+
+  <h2>🧠 4) Ejercicio final integrador</h2>
+  <ol>Conectar el servidor web a la VLAN 103.
+      <pre><code>Usa nmap ver que puertos estan arriba (up)</code></pre>
+    </li>
+    <li>Descubrí hosts activos en la VLAN 100.
+      <pre><code>nmap -sn 192.168.1.0/24</code></pre>
+    </li>
+    <li>Elegí un host detectado y escaneá todos sus puertos TCP.
+      <pre><code>nmap -p- &lt;ip_objetivo&gt;</code></pre>
+    </li>
+    <li>Identificá versiones y sistema operativo.
+      <pre><code>nmap -sV -O &lt;ip_objetivo&gt;</code></pre>
+    </li>
+    <li>Guardá los resultados para el informe.
+      <pre><code>nmap -oN &lt;ip_objetivo&gt;_top1000.txt &lt;ip_objetivo&gt;
+nmap -oN &lt;ip_objetivo&gt;_full.txt -p- &lt;ip_objetivo&gt;</code></pre>
+    </li>
+    <li>(Opcional) Ejecutá scripts NSE de reconocimiento web/SMB.
+      <pre><code>nmap --script http-* &lt;ip_objetivo_web&gt;
+nmap --script smb* &lt;ip_objetivo_windows&gt;</code></pre>
+    </li>
+  </ol>
+
+  <hr>
+
+  <h2>📚 5) Referencias</h2>
+  <ul>
+    <li>Nmap — <em>Official Reference Guide</em>: <a href="https://nmap.org/book/man.html" target="_blank">https://nmap.org/book/man.html</a></li>
+    <li>Nmap — <em>Network Scanning</em>: <a href="https://nmap.org/book/" target="_blank">https://nmap.org/book/</a></li>
+  </ul>
+
+  <hr>
+
+  <h2>6) Archivos Compartidos</h2>
+  <div class="nota-info">
+    📂 <strong>Carpeta compartida</strong> en el siguiente
+    <a href="https://1drv.ms/f/c/e8967e02067b9622/EnZMmhQyaMNGorNTh9_k4xUBvbSAf79xgScAiW7POnvVog?e=1cWxvL" target="_blank">enlace</a>.
+    <p style="margin-top:10px; font-weight:bold;"></p>
+  </div>
+
+  <hr>
+
+  <h2>7) 🧾 Conclusión</h2>
+  <p>
+    Con Nmap es posible pasar de un simple “¿quién está en la red?” a un perfil detallado de servicios y rutas.
+    Usado con autorización, permite priorizar riesgos y definir controles como cierre de puertos, segmentación y hardening.
+  </p>
+
+<hr>
+
+  <form id="form-reportar" class="form-horizontal">
+    <input type="hidden" id="titulo" name="titulo">
+    <input type="hidden" id="archivo" name="archivo">
+    <input type="hidden" id="fecha" name="fecha">
+    <textarea id="comentario" name="comentario" placeholder="Escribí tu comentario aquí" required></textarea>
+    <button type="submit">Enviar</button>
+  </form>
+
+</main>
+
+
+  <div data-include="footer"></div>
+  <script src="assets/js/scripts.js"></script>
+</body>
+</html>
