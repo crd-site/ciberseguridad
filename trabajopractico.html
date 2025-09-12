@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Firewall de Nueva Generacion | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+  <main>
+
+  <div data-include="aviso-etico"></div>
+
+  <!-- =========================
+       ENCABEZADO / TÍTULO
+       (Respetar estructura y clases base del ejemplo)
+  ========================== -->
+  <header class="alert-primary">
+    <h1>
+      <i class="fa fa-shield fa-fw" aria-hidden="true"></i>
+      📘 Guía del Trabajo Final
+    </h1>
+    <p class="subtitulo">Diseño e implementacion segura</p>
+  </header>
+
+  <!-- =========================
+       BLOQUE: OBJETIVO
+  ========================== -->
+  <section class="card" id="objetivo" data-accordion="section">
+
+        <hr>
+    <h2 class="card-title" data-accordion="trigger">
+      1. 🎯 Objetivo
+      <i class="fa fa-angle-down chevron" aria-hidden="true"></i>
+    </h2>
+    <div class="card-content" data-accordion="content">
+      <ol class="lista-num">
+        <li>
+          <strong>Integrar y aplicar</strong> de manera práctica los conceptos desarrollados a lo largo del módulo, mediante la implementación de un <em>firewall</em> de nueva generación en un entorno controlado.
+        </li>
+    
+        <li>
+          <strong>Replicar un escenario</strong> de infraestructura empresarial real, con segmentación de red en zonas:
+          <ul class="lista-bullets">
+            <li><span class="badge badge-blue">BLUE</span> – Invitados</li>
+            <li><span class="badge badge-gray">GRAY</span> – Empleados</li>
+            <li><span class="badge badge-orange">ORANGE</span> – Recursos compartidos / DMZ</li>
+            <li><span class="badge badge-green">GREEN</span> – Producción</li>
+          </ul>
+          <p class="nota">La segmentación es clave para reducir superficie de ataque y minimizar riesgos.</p>
+        </li>
+        <li>
+          <strong>Resultados esperados:</strong>
+          <ol class="lista-letras">
+            <li>Conectar y administrar dispositivos en su zona, garantizando servicios internos y acceso controlado a Internet.</li>
+            <li>Configurar reglas que simulen políticas corporativas:
+              <ul class="lista-bullets compacta">
+                <li>Restringir accesos no autorizados.</li>
+                <li>Proteger los servidores de producción.</li>
+                <li>Habilitar solo servicios necesarios en la DMZ.</li>
+              </ul>
+            </li>
+            <li>Reflexionar sobre segmentación, control de accesos y firewalls perimetrales como pilares de ciberdefensa.</li>
+          </ol>
+        </li>
+        <li>
+          <strong>Enfoque estratégico:</strong> demostrar cómo una arquitectura bien diseñada fortalece la resiliencia ante incidentes.
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- =========================
+       BLOQUE: ENTORNO
+  ========================== -->
+  <section class="card" id="entorno" data-accordion="section">
+    <h2 class="card-title" data-accordion="trigger">
+          <hr>
+      2. 🛠️ Entorno de trabajo
+      <i class="fa fa-angle-down chevron" aria-hidden="true"></i>
+    </h2>
+    <div class="card-content" data-accordion="content">
+      <h3 class="h3">2.1. Herramientas requeridas</h3>
+      <ul class="lista-bullets">
+        <li>VMware Workstation</li>
+        <li>GNS3</li>
+        <li>pfSense (VM)</li>
+        <li>VPCS</li>
+        <li>VM Kali Linux</li>
+        <li>VM Windows 7</li>
+        <li>VM Web Server</li>
+      </ul>
+
+      <h3 class="h3">2.2. Acceso a la VM de pfSense</h3>
+      <ul class="lista-bullets">
+        <li>Descargar desde la carpeta compartida (clave publicada en clase).</li>
+        <li><strong>Directorio:</strong> 3. VMs &gt; D. Firewall</li>
+        <li><strong>Usuario:</strong> <code>admin</code></li>
+        <li><strong>Contraseña:</strong> (misma de la carpeta compartida)</li>
+        <li><strong>Enlace:</strong> <a href="https://1drv.ms/f/c/e8967e02067b9622/EnZMmhQyaMNGorNTh9_k4xUBvbSAf79xgScAiW7POnvVog?e=1cWxvL" target="_blank" class="enlace">Carpeta Compartida</a></li>
+      </ul>
+
+      <h3 class="h3">2.3. Redes predefinidas en pfSense</h3>
+      <div class="tabla-responsive">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Zona</th>
+              <th>Descripción</th>
+              <th>Red</th>
+              <th>Gateway</th>
+              <th>DHCP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-blue">BLUE</span></td>
+              <td>Invitados</td>
+              <td><code>192.168.88.0/24</code></td>
+              <td><code>192.168.88.254</code></td>
+              <td><span class="pill ok">Habilitado</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-gray">GRAY</span></td>
+              <td>Empleados</td>
+              <td><code>172.17.1.0/24</code></td>
+              <td><code>172.17.1.254</code></td>
+              <td><span class="pill ok">Habilitado</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-orange">ORANGE</span></td>
+              <td>DMZ / Recursos</td>
+              <td><code>172.16.1.0/24</code></td>
+              <td><code>172.16.1.254</code></td>
+              <td><span class="pill ok">Habilitado</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-green">GREEN</span></td>
+              <td>Producción</td>
+              <td><code>10.32.1.0/24</code></td>
+              <td><code>10.32.1.254</code></td>
+              <td><span class="pill ok">Habilitado</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="nota"><strong>2.4.</strong> Todas las interfaces entregan IP por DHCP (las VMs y VPCS reciben IP automáticamente).</p>
+    </div>
+  </section>
+
+  <!-- =========================
+       BLOQUE: ACTIVIDADES
+  ========================== -->
+  <section class="card" id="actividades" data-accordion="section">
+    <h2 class="card-title" data-accordion="trigger">
+          <hr>
+      3. 📋 Actividades a desarrollar
+      <i class="fa fa-angle-down chevron" aria-hidden="true"></i>
+    </h2>
+    <div class="card-content" data-accordion="content">
+
+      <h3 class="h3">3.1. Conexión de las VMs a sus zonas</h3>
+      
+<figure>
+      <img src="assets/img/TrabajoPractico.png" alt="Topología de Red" style="width:100%; border-radius: 8px; margin: 20px 0;">
+      <figcaption><strong>Figura 1:</strong> Arquitectura de red</figcaption>
+    </figure>
+
+      <ol class="lista-letras">
+        <li>Conectar cada PC/Servidor al switch e interfaz de la zona según la arquitectura.</li>
+        <li>Verificar que cada dispositivo reciba IP por DHCP (<em>desde .20 en adelante según orden de arranque</em>).</li>
+        <li>Hacer <code>ping x.x.x.254</code> al gateway de su zona.</li>
+      </ol>
+
+      <details class="panel">
+        <summary class="panel-title">
+          Consideraciones de red en la PC física
+        
+        <div class="panel-content">
+          <ul class="lista-bullets">
+            <li><code>VMnet 8: No modificar - NAT para conectar a internet</code></li>
+            <li><code>VMnet 2: 169.254.2.1/24 (sin gateway)</code></li>
+            <li><code>VMnet 3: 169.254.3.1/24 (sin gateway)</code></li>
+            <li><code>VMnet 4: 169.254.4.1/24 (sin gateway)</code></li>
+            <li><code>VMnet 5: 172.16.1.1/24 (sin gateway)</code></li>
+          </ul>
+          <p class="warning">
+            Para este laboratorio <strong>no agregues puerta de enlace</strong> a ninguna VMnet de la PC física: podrías perder Internet local.
+          </p>
+          <ul class="lista-bullets compacta">
+            <li>Probar <code>ping 172.16.1.254</code> desde la PC física.</li>
+            <li>Acceso a administración: <a href="https://172.16.1.254/" class="enlace">https://172.16.1.254/</a></li>
+            <li>Algunas reglas vienen de ejemplo y pueden modificarse.</li>
+          </ul>
+        </div>
+        </summary>
+      </details>
+
+      <h3 class="h3">3.2. Prueba de conectividad inicial</h3>
+      <ol class="lista-letras">
+        <li>Comunicaciones dentro de la misma zona.</li>
+        <li>Acceso a los gateways (<code>x.x.x.254</code>).</li>
+        <li>Evidencias: capturas de <code>ping</code>, <code>ipconfig</code> / <code>ifconfig</code>.</li>
+      </ol>
+
+      <h3 class="h3">3.3. Implementación de reglas de firewall</h3>
+      <div class="grid-2">
+        <div class="card mini">
+          <h4><span class="badge badge-blue">BLUE</span> Invitados</h4>
+          <ul class="lista-bullets">
+            <li>Solo acceso a Internet.</li>
+            <li>Bloqueado a zonas internas.</li>
+          </ul>
+        </div>
+        <div class="card mini">
+          <h4><span class="badge badge-gray">GRAY</span> Empleados</h4>
+          <ul class="lista-bullets">
+            <li>Acceso a Internet.</li>
+            <li>Permitir acceso a <span class="badge badge-orange">ORANGE</span>.</li>
+            <li>Denegar acceso a <span class="badge badge-green">GREEN</span>.</li>
+          </ul>
+        </div>
+        <div class="card mini">
+          <h4><span class="badge badge-orange">ORANGE</span> DMZ/Recursos</h4>
+          <ul class="lista-bullets">
+            <li>Servidor web accesible desde todas las zonas e Internet.</li>
+            <li>Limitar a puertos <code>80/443</code>.</li>
+          </ul>
+        </div>
+        <div class="card mini">
+          <h4><span class="badge badge-green">GREEN</span> Producción</h4>
+          <ul class="lista-bullets">
+            <li>ZONA MÁS PROTEGIDA.</li>
+            <li>Acceso administrativo solo desde <span class="badge badge-gray">GRAY</span>.</li>
+            <li>Denegar desde <span class="badge badge-blue">BLUE</span>.</li>
+            <li>Restringir desde <span class="badge badge-orange">ORANGE</span>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 class="h3">3.4. Administración del firewall</h3>
+      <ul class="lista-bullets">
+        <li>Desde la PC física: acceder a <a href="https://172.16.1.254/" class="enlace">https://172.16.1.254/</a></li>
+        <li>Capturar pantalla de login y del <em>dashboard</em>.</li>
+      </ul>
+
+      <h3 class="h3">3.5. Capturas y documentación</h3>
+      <ul class="checklist">
+        <li>Configuración de interfaces.</li>
+        <li>Asignación de IP por DHCP.</li>
+        <li>Conectividad (ping).</li>
+        <li>Reglas por zona.</li>
+        <li>Acceso al servidor web en DMZ (ORANGE).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- =========================
+       BLOQUE: ENTREGABLES
+  ========================== -->
+  <section class="card" id="entregables" data-accordion="section">
+    <h2 class="card-title" data-accordion="trigger">
+          <hr>
+      4. 📝 Entregables
+      <i class="fa fa-angle-down chevron" aria-hidden="true"></i>
+    </h2>
+    <div class="card-content" data-accordion="content">
+      <h3 class="h3">4.1. Informe (PDF)</h3>
+      <ol class="lista-letras">
+        <li>Introducción breve a la práctica.</li>
+        <li>Capturas con descripción.</li>
+        <li>Resumen de reglas y justificación.</li>
+        <li>Reflexión sobre dificultades y aprendizajes.</li>
+      </ol>
+
+      <h3 class="h3">4.2. Presentación final</h3>
+      <ul class="lista-bullets">
+        <li>Duración: 7–10 minutos por grupo.</li>
+        <li>Demostración en vivo de una funcionalidad (p. ej., bloqueo BLUE→GREEN; permitido GRAY→ORANGE).</li>
+        <li>Reflexión grupal: lo más difícil y lecciones aprendidas.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- =========================
+       BLOQUE: EVALUACIÓN
+  ========================== -->
+  <section class="card" id="evaluacion" data-accordion="section">
+    <h2 class="card-title" data-accordion="trigger">
+          <hr>
+      5. 📊 Evaluación
+      <i class="fa fa-angle-down chevron" aria-hidden="true"></i>
+    </h2>
+    <div class="card-content" data-accordion="content">
+      <ul class="lista-barras">
+        <li><span>Informe con capturas</span><strong> 50%</strong></li>
+        <li><span>Funcionamiento en la demo</span><strong> 30%</strong></li>
+        <li><span>Reflexión y participación</span><strong> 20%</strong></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- =========================
+       BLOQUE: NOTA FINAL
+  ========================== -->
+
+      6. ⚠️ Nota final
+          <div class="nota">
+  💡   Todas las pruebas deben realizarse en el entorno controlado de GNS3/VMware con fines exclusivamente académicos.
+</div>
+
+
+
+<form id="form-reportar" class="form-horizontal" >
+  <input type="hidden" id="titulo" name="titulo">
+  <input type="hidden" id="archivo" name="archivo">
+  <input type="hidden" id="fecha" name="fecha">
+  <textarea id="comentario" name="comentario" placeholder="Escribí tu comentario aquí" required></textarea>
+  <button type="submit">Enviar</button>
+</form>
+
+</main>
+<div data-include="footer"></div>
+<script src="assets/js/scripts.js"></script>
+</body>
+</html>
