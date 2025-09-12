@@ -42,6 +42,7 @@
         <li>
           <strong>Replicar un escenario</strong> de infraestructura empresarial real, con segmentación de red en zonas:
           <ul class="lista-bullets">
+             <li><span class="badge badge-blue">RED</span> – Zona roja conectada a internet</li>
             <li><span class="badge badge-blue">BLUE</span> – Invitados</li>
             <li><span class="badge badge-gray">GRAY</span> – Empleados</li>
             <li><span class="badge badge-orange">ORANGE</span> – Recursos compartidos / DMZ</li>
@@ -145,8 +146,9 @@
           </tbody>
         </table>
       </div>
-
-      <p class="nota"><strong>2.4.</strong> Todas las interfaces entregan IP por DHCP (las VMs y VPCS reciben IP automáticamente).</p>
+      
+      <p class="nota"> La Zona "RED" recibe automaticamente su direccion IP desde la interfaz VMnet8(NAT), no es necesario configurar</p>
+      <p class="nota"> Todas las interfaces entregan IP por DHCP de cada interfaz den PFsense (las VMs y VPCS reciben IP automáticamente segun el orden de arranque)</p>
     </div>
   </section>
 
@@ -159,6 +161,8 @@
       3. 📋 Actividades a desarrollar
       <i class="fa fa-angle-down chevron" aria-hidden="true"></i>
     </h2>
+El escenario propuesto replica la infraestructura de una empresa real, donde la segmentación de la red en distintas zonas de seguridad (BLUE – Invitados, GRAY – Empleados, ORANGE – Recursos compartidos/DMZ, y GREEN – Producción) constituye una estrategia clave para reforzar la protección de la información y minimizar riesgos.
+
     <div class="card-content" data-accordion="content">
 
       <h3 class="h3">3.1. Conexión de las VMs a sus zonas</h3>
@@ -167,11 +171,11 @@
       <img src="assets/img/TrabajoPractico.png" alt="Topología de Red" style="width:100%; border-radius: 8px; margin: 20px 0;">
       <figcaption><strong>Figura 1:</strong> Arquitectura de red</figcaption>
     </figure>
+    <br>
 
       <ol class="lista-letras">
         <li>Conectar cada PC/Servidor al switch e interfaz de la zona según la arquitectura.</li>
-        <li>Verificar que cada dispositivo reciba IP por DHCP (<em>desde .20 en adelante según orden de arranque</em>).</li>
-        <li>Hacer <code>ping x.x.x.254</code> al gateway de su zona.</li>
+     
       </ol>
 
       <details class="panel">
@@ -194,27 +198,57 @@
             Para este laboratorio <strong>no agregues puerta de enlace</strong> a ninguna VMnet de la PC física: podrías perder Internet local.
           </p>
           <ul class="lista-bullets compacta">
-            <li>Probar <code>ping 172.16.1.254</code> desde la PC física.</li>
-            <li>Acceso a administración: <a href="https://172.16.1.254/" class="enlace">https://172.16.1.254/</a></li>
+            <li>Una vez descargada el PFsense, abrir desde el VMwareWorkstation y configurar las VMnets</li>
+            <div class="gif-mini">
+              <img src="assets/img/vmnetconf.gif" alt="Demostración Trabajo Final">
+            </div>
+            <li>Probar ping 172.16.1.254 desde la PC física.</li>
+            <li>Acceso a administración: si reponde al ping exitoso ya puedes acceder a la interfaz de configuracion <a href="https://172.16.1.254/" class="enlace">https://172.16.1.254/</a></li>
+            <div class="gif-mini">
+              <img src="assets/img/login.gif" alt="Demostración Trabajo Final">
+            </div>
             <li>Algunas reglas vienen de ejemplo y pueden modificarse.</li>
-              <div class="gif-mini">
-            <img src="assets/img/vmnetconf.gif" alt="Demostración Trabajo Final">
-          </div>
+            <div class="gif-mini">
+              <img src="assets/img/reglas.gif" alt="Demostración Trabajo Final">
+            </div>
+           
+          
 
             
           </ul>
+           <h3 class="h3">3.2. Administración del firewall</h3>
+      <ul class="lista-bullets">
+        <li>Desde la PC física: acceder a <a href="https://172.16.1.254/" class="enlace">https://172.16.1.254/</a></li>
+        <li>Capturar pantalla de login y del <em>dashboard</em>.</li>
+      </ul>
         </div>
         </summary>
       </details>
 
-      <h3 class="h3">3.2. Prueba de conectividad inicial</h3>
+      <h3 class="h3">3.3. Prueba de conectividad inicial</h3>
       <ol class="lista-letras">
         <li>Comunicaciones dentro de la misma zona.</li>
-        <li>Acceso a los gateways (<code>x.x.x.254</code>).</li>
-        <li>Evidencias: capturas de <code>ping</code>, <code>ipconfig</code> / <code>ifconfig</code>.</li>
+        <li>Verificar que cada dispositivo reciba IP por DHCP (<em>desde .20 en adelante según orden de arranque</em>) </li>
+        <div class="nota-info">
+          Las VPCS se habilita el DHCP cliente con el comando <code>ip dhcp -r </code>
+          
+        </div>
+        <div class="nota-info">
+         
+          El Web Server ya tiene el DHCP habilitado. 
+          
+        </div>
+        <div class="nota-info">
+          
+          El Windows y Kali deben habilitar el DHCP Automatico desde la interfaz grafica
+        </div>
+        <li>Acceso a los gateways (ping x.x.x.254) dentro de cada zona a su respectiva puerta de enlace o gateway.</li>
+      
+        <li>Probar ping al gateway de cada PC/servidor a su zona <code>ping x.x.x.254    </code> </li>si todo esta correcto deberia reponder
+        <li>Evidencias: capturas de <code>ping</code> <code>ipconfig</code>  <code>ifconfig</code></li>
       </ol>
 
-      <h3 class="h3">3.3. Implementación de reglas de firewall</h3>
+      <h3 class="h3">3.4. Implementación de reglas de firewall</h3>
       <div class="grid-2">
         <div class="card mini">
           <h4><span class="badge badge-blue">BLUE</span> Invitados</h4>
@@ -235,7 +269,7 @@
           <h4><span class="badge badge-orange">ORANGE</span> DMZ/Recursos</h4>
           <ul class="lista-bullets">
             <li>Servidor web accesible desde todas las zonas e Internet.</li>
-            <li>Limitar a puertos <code>80/443</code>.</li>
+            <li>Limitar a puertos <code>80/443</code></li>
           </ul>
         </div>
         <div class="card mini">
@@ -249,11 +283,7 @@
         </div>
       </div>
 
-      <h3 class="h3">3.4. Administración del firewall</h3>
-      <ul class="lista-bullets">
-        <li>Desde la PC física: acceder a <a href="https://172.16.1.254/" class="enlace">https://172.16.1.254/</a></li>
-        <li>Capturar pantalla de login y del <em>dashboard</em>.</li>
-      </ul>
+     
 
       <h3 class="h3">3.5. Capturas y documentación</h3>
       <ul class="checklist">
