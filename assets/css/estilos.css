@@ -394,4 +394,32 @@ pre.reveal, code.reveal {
 }
 
 
+/* 🎞️ GIF miniatura con zoom al pasar el mouse (centrado) */
+.gif-mini {
+  width: 180px;               /* tamaño miniatura */
+  overflow: hidden;
+  border-radius: 10px;
+  cursor: zoom-in;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  display: block;
+  margin: 15px auto;          /* centra horizontalmente */
+  box-shadow: 0 0 10px rgba(0,191,255,0.4);
+  transform-origin: center center;  /* agranda desde el centro */
+  text-align: center;
+}
+
+.gif-mini img {
+  width: 100%;
+  display: block;
+  border-radius: 10px;
+}
+
+.gif-mini:hover {
+  transform: scale(5.2);       /* se expande */
+  z-index: 9999;
+  position: relative;
+  box-shadow: 0 0 25px rgba(0,191,255,0.9);
+  cursor: zoom-out;
+}
+
 
