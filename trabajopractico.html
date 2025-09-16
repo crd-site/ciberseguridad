@@ -176,36 +176,83 @@ El escenario propuesto replica la infraestructura de una empresa real, donde la 
     <br>
 
       <ol class="lista-letras">
+
+        <li>Una vez descargada el PFsense, abrir desde el VMwareWorkstation y configurar las VMnets</li>
+         <div class="gif-mini">
+              <img src="assets/img/vmnetconf.gif" alt="Demostración Trabajo Final">
+          </div>
         <li>Conectar cada PC/Servidor al switch e interfaz de la zona según la arquitectura.</li>
      
       </ol>
+
+   
 
       <details class="panel">
         <summary class="panel-title">
           Consideraciones de red en la PC física
         
-        <div class="panel-content">
-          <ul class="lista-bullets">
-            <li><code>VMnet 8: No modificar - NAT para conectar a internet</code></li>
-            <li><code>VMnet 2: 169.254.2.1/24 (sin gateway)</code></li>
-            <li><code>VMnet 3: 169.254.3.1/24 (sin gateway)</code></li>
-            <li><code>VMnet 4: 169.254.4.1/24 (sin gateway)</code></li>
-            <li><code>VMnet 5: 172.16.1.1/24 (sin gateway)</code></li>
-          </ul>
-          <div class="gif-mini">
-            <img src="assets/img/ipinvalida.gif" alt="Demostración Trabajo Final">
+        <div class="panel-content">      
+        
+
+          <div style="background:#1e1e1e;color:#f0f0f0;padding:20px;border-radius:10px;font-family:Segoe UI, sans-serif;">
+  <h3>Encender el PFsense y tener en cuenta lo siguiente</h3>
+  <p>
+    Cuando <b>pfSense</b> se enciende, asigna varias puertas de enlace (<i>gateways</i>) a la PC física.  
+    Esto provoca que Windows muestre varias rutas predeterminadas (0.0.0.0/0), lo que puede causar
+    <b>inestabilidad o pérdida de conexión a Internet</b>.  
+    Para solucionarlo, se deben eliminar las puertas de enlace de las interfaces sobrantes.  
+  </p>
+
+  <p>Con el siguiente script de ejemplo <b>eliminarPuertaEnlace.bat</b> se eliminan automáticamente esas rutas extra:</p>
+
+  <pre style="background:#2d2d2d;color:#dcdcdc;padding:15px;border-radius:8px;overflow-x:auto;">
+@echo off
+echo =============================================
+echo Eliminando puertas de enlace extra de pfSense
+echo =============================================
+
+:: Borra la ruta con gateway 10.32.1.254
+route delete 0.0.0.0 mask 0.0.0.0 10.32.1.254
+
+:: Borra la ruta con gateway 172.16.1.254
+route delete 0.0.0.0 mask 0.0.0.0 172.16.1.254
+
+:: Borra la ruta con gateway 192.168.88.254
+route delete 0.0.0.0 mask 0.0.0.0 192.168.88.254
+
+:: Borra la ruta con gateway 172.17.1.254
+route delete 0.0.0.0 mask 0.0.0.0 172.17.1.254
+
+echo =============================================
+echo Operacion finalizada. Verifique con: route print
+echo =============================================
+pause
+  </pre>
+
+  <a href="data:application/octet-stream, @echo off%0Aecho =============================================%0Aecho Eliminando puertas de enlace extra de pfSense%0Aecho =============================================%0A%0A:: Borra la ruta con gateway 10.32.1.254%0Aroute delete 0.0.0.0 mask 0.0.0.0 10.32.1.254%0A%0A:: Borra la ruta con gateway 172.16.1.254%0Aroute delete 0.0.0.0 mask 0.0.0.0 172.16.1.254%0A%0A:: Borra la ruta con gateway 192.168.88.254%0Aroute delete 0.0.0.0 mask 0.0.0.0 192.168.88.254%0A%0A:: Borra la ruta con gateway 172.17.1.254%0Aroute delete 0.0.0.0 mask 0.0.0.0 172.17.1.254%0A%0Aecho =============================================%0Aecho Operacion finalizada. Verifique con: route print%0Aecho =============================================%0Apause" 
+     download="eliminarPuertaEnlace.bat"
+     style="display:inline-block;margin-top:15px;padding:10px 20px;background:#0078d7;color:white;text-decoration:none;border-radius:5px;">
+    Descargar eliminarPuertaEnlace.bat
+  </a>
+<br><br>
+  Una vez descargada, ejecutar como administrador para que eliminar las cuatro puerta de enlace o Gateway:
+  <div class="gif-mini">
+              <img src="assets/img/deleteGateway.gif" alt="Demostración Trabajo Final">
           </div>
 
-          <p class="warning">
-            Para este laboratorio <strong>no agregues puerta de enlace</strong> a ninguna VMnet de la PC física: podrías perder Internet local.
+
+          <div class="nota-advertencia">
+  ⚠️ <strong>Advertencia:</strong> Para tener un control de cada pasa, si no quieres ejecutar el script, puedes hacerlo desde la terminal con privilegio de administrador y ejecutar
+  "route delete 0.0.0.0 mask ..." (como esta más arriba) para cada una de las cuatro puerta de enlace.
+</div>
+
+</div>
           </p>
           <ul class="lista-bullets compacta">
-            <li>Una vez descargada el PFsense, abrir desde el VMwareWorkstation y configurar las VMnets</li>
-            <div class="gif-mini">
-              <img src="assets/img/vmnetconf.gif" alt="Demostración Trabajo Final">
-            </div>
+           
+
+
             <h3 class="h3">3.2. Administración del firewall</h3>
-     
             
             <li>Probar ping 172.16.1.254 desde la PC física.</li>
             <li>Acceso a administración: si reponde al ping exitoso ya puedes acceder a la interfaz de configuracion desde la PC física: <a href="https://172.16.1.254/" class="enlace">https://172.16.1.254/</a></li>
