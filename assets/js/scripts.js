@@ -22,40 +22,54 @@ document.addEventListener("copy", function (event) {
 });
 
 
-
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("form-reportar");
   const mensaje = document.getElementById("mensaje-envio");
+  const cajaTexto = document.getElementById("comentario"); // Referencia directa al cuadro de texto
 
-  // Asignar valores automáticos
-  document.getElementById("titulo").value = document.title;
-  document.getElementById("archivo").value = window.location.pathname.split("/").pop();
-  document.getElementById("fecha").value = new Date().toISOString();
+  // Función para rellenar campos automáticos
+  const rellenar = () => {
+    if (document.getElementById("titulo")) document.getElementById("titulo").value = document.title;
+    if (document.getElementById("archivo")) document.getElementById("archivo").value = window.location.pathname.split("/").pop();
+    if (document.getElementById("fecha")) document.getElementById("fecha").value = new Date().toISOString();
+  };
 
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
+  rellenar();
 
-    const formData = new FormData(form);
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
 
-    fetch("https://script.google.com/macros/s/AKfycbw3T9w49wc3iPLRhbfUJmfvMuJWNlFkyY7nlzMTAlYXXr6dsAT3IbIljrEVj-rDWHk/exec", {
-      method: "POST",
-      body: formData,
-    })
-      .then((res) => res.text())
-      .then((text) => {
-        if (text === "OK") {
-          mensaje.textContent = "✅ Comentario enviado correctamente.";
-          form.reset();
-        } else {
-          mensaje.textContent = "❌ Error en el envío.";
-        }
-      })
-      .catch((err) => {
-        mensaje.textContent = "❌ Error de red.";
-        console.error(err);
+      const scriptURL = "https://script.google.com/macros/s/AKfycbw3T9w49wc3iPLRhbfUJmfvMuJWNlFkyY7nlzMTAlYXXr6dsAT3IbIljrEVj-rDWHk/exec";
+      
+      // 1. Enviamos los datos (modo 'no-cors' para que Google no bloquee el script)
+      fetch(scriptURL, {
+        method: "POST",
+        body: new FormData(form),
+        mode: "no-cors" 
       });
-  });
+
+      // 2. BORRADO INMEDIATO (No esperamos a Google)
+      // Cambiamos el mensaje
+      if (mensaje) mensaje.textContent = "✅ Comentario enviado correctamente.";
+
+      // Vaciamos el cuadro de texto manualmente (lo más importante)
+      if (cajaTexto) cajaTexto.value = ""; 
+
+      // Reseteamos el formulario y volvemos a poner los datos invisibles
+      form.reset();
+      rellenar();
+
+      // 3. OPCIONAL: Borrar el mensaje de éxito después de 5 segundos
+      setTimeout(() => {
+        if (mensaje) mensaje.textContent = "";
+      }, 5000);
+    });
+  }
 });
+
+
+
 
 
 

