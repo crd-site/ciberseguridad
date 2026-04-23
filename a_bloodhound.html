@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Guía: Instalación y Uso de BloodHound CE | CRD</title>
+  <title>Guía: BloodHound — Reconocimiento Ofensivo de Active Directory | CRD</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="assets/css/estilos.css">
 </head>
@@ -10,10 +10,13 @@
 <main>
   <div data-include="aviso-etico"></div>
 
-  <h1>☠️ Laboratorio: BloodHound — Reconocimiento Ofensivo de Active Directory y Rutas de Escalada (Red & Blue Team)</h1>
+  <h1>☠️ Laboratorio: BloodHound — Reconocimiento Ofensivo de Active Directory y Rutas de Escalada (Red &amp; Blue Team)</h1>
 
   <p>
-    Este laboratorio demuestra cómo instalar y usar <strong>BloodHound Community Edition (CE)</strong> para mapear la infraestructura de identidad de un dominio Active Directory, identificar rutas de ataque hacia <strong>Domain Admin</strong> y comprender las relaciones de privilegios entre objetos del dominio usando el entorno <strong>GOAD (Game of Active Directory)</strong>.
+    Este laboratorio demuestra cómo instalar y usar <strong>BloodHound Community Edition (CE)</strong> para mapear la infraestructura de identidad de un dominio Active Directory, identificar rutas de ataque hacia <strong>Domain Admin</strong> y comprender las relaciones de privilegios entre objetos del dominio. El entorno de práctica es <strong>GOAD (Game of Active Directory)</strong> — un laboratorio vulnerable preconfigurado que replica errores comunes en redes corporativas reales.
+  </p>
+  <p>
+    Desde la perspectiva <strong>Red Team</strong>, veremos cómo un atacante con una sola cuenta de usuario estándar puede mapear completamente el dominio y calcular la ruta más corta hacia Domain Admin. Desde la perspectiva <strong>Blue Team</strong>, aprenderemos a detectar este reconocimiento y qué controles defensivos lo mitigan.
   </p>
 
   <h2>🛡️ Mapeo de Tácticas y Técnicas (MITRE ATT&CK)</h2>
@@ -63,19 +66,7 @@
     <img src="assets/img/ACL-AD.png" alt="Arquitectura de Red GOAD-Light" style="max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 8px;">
   </div>
 
-  <p>Para que el laboratorio sea exitoso, es fundamental configurar el entorno virtual de la siguiente manera:</p>
-  <ul>
-    <li><strong>Segmento de Red:</strong> Todas las VMs (dc01, dc02, srv02 y Kali) deben estar conectadas al switch virtual <strong>VMnet5 (Host-only)</strong>.</li>
-    <li><strong>Subred:</strong> El laboratorio opera en el rango <strong>192.168.56.0/24</strong> o de acuerdo como tienes configurado el Virtual Network Editor</li>
-    <li><strong>Orden de arranque:</strong> Encender siempre en este orden: dc01 → dc02 → srv02 → Kali.</li>
-    <li><strong>Verificación de conectividad:</strong>
-      <ul>
-        <li>Desde <strong>Kali</strong>, ejecutar <i>ping 192.168.56.10</i> para verificar conectividad con dc01.</li>
-        <li>Desde <strong>Kali</strong>, ejecutar <i>ping 192.168.56.11</i> para verificar conectividad con dc02.</li>
-      </ul>
-    </li>
-    <li><strong>RAM recomendada para Kali:</strong> Mínimo <strong>8 GB</strong> asignados en VMware Settings para que BloodHound CE funcione correctamente.</li>
-  </ul>
+  <p>El laboratorio opera sobre tres máquinas virtuales Windows Server y tu Kali Linux existente, todos conectados en una red interna aislada:</p>
 
   <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
     <thead>
@@ -84,6 +75,7 @@
         <th>Nombre</th>
         <th>Dominio</th>
         <th>IP</th>
+        <th>Rol</th>
       </tr>
     </thead>
     <tbody>
@@ -91,34 +83,392 @@
         <td><strong>dc01</strong></td>
         <td>KINGSLANDING</td>
         <td>sevenkingdoms.local</td>
-        <td><code>192.168.56.10</code></td>
+        <td><code>192.168.56.10</code> (estática - VMnet5)</td>
+        <td>Domain Controller — dominio raíz del bosque</td>
       </tr>
       <tr>
         <td><strong>dc02</strong></td>
         <td>WINTERFELL</td>
         <td>north.sevenkingdoms.local</td>
-        <td><code>192.168.56.11</code></td>
+        <td><code>192.168.56.11</code> (estática - VMnet5)</td>
+        <td>Domain Controller — dominio hijo</td>
       </tr>
       <tr>
         <td><strong>srv02</strong></td>
         <td>CASTELBLACK</td>
         <td>north.sevenkingdoms.local</td>
-        <td><code>192.168.56.22</code></td>
+        <td><code>192.168.56.22</code> (estática  - VMnet5)</td>
+        <td>Servidor miembro — SQL Server Express</td>
       </tr>
       <tr>
         <td><strong>Kali</strong></td>
         <td>Atacante</td>
         <td>—</td>
-        <td><code>192.168.56.x (DHCP)</code></td>
+        <td>DHCP vía VMnet5</td>
+        <td>Máquina atacante — BloodHound CE</td>
       </tr>
     </tbody>
   </table>
 
+  <p><strong>Arquitectura de red:</strong> Cada servidor Windows tiene dos tarjetas de red. La primera conectada a <strong>VMnet5 (Host-only)</strong> con IP estática — es la red del laboratorio donde ocurren todos los ataques. La segunda conectada a <strong>NAT</strong> — solo para acceso a internet durante actualizaciones, no se usa en ningún ataque.</p>
+
   <hr>
 
-  <h2>🔧 FASE 1: Instalación de BloodHound CE en Kali Linux</h2>
+  <h2>🔴 FASE 1: Preparación del Entorno GOAD</h2>
 
-  <h3>1. Instalar Docker</h3>
+  <h3>1.1 ¿Qué es GOAD?</h3>
+  <p>
+    <strong>GOAD (Game of Active Directory)</strong> es un laboratorio de seguridad de código abierto creado por Orange Cyberdefense. Despliega un entorno Active Directory completamente funcional con vulnerabilidades preconfiguradas intencionalmente, diseñado para practicar técnicas de ataque y defensa sin afectar sistemas reales.
+  </p>
+  <p>
+    A diferencia de otros laboratorios que simulan vulnerabilidades individuales, GOAD replica el comportamiento de una red corporativa real — con múltiples dominios, relaciones de confianza, cuentas de servicio y permisos mal configurados acumulados con el tiempo. Los servidores y usuarios están nombrados con personajes de la serie <em>Game of Thrones.</em>
+  </p>
+
+  <h3>1.2 Descripción de cada VM y su rol</h3>
+
+  <h4>dc01 — KINGSLANDING / sevenkingdoms.local</h4>
+  <ul>
+    <li>Domain Controller del <strong>dominio raíz</strong> del bosque Active Directory.</li>
+    <li>Gestiona usuarios del reino: robert.baratheon, cersei.lannister, tywin.lannister, joffrey.baratheon, stannis.baratheon, jaime.lannister.</li>
+    <li>Tiene <strong>ADCS (Active Directory Certificate Services)</strong> instalado con plantillas vulnerables — objetivo de ataques de certificados en laboratorios futuros (ESC1).</li>
+    <li>Firewall de Windows deshabilitado — permite reconocimiento directo desde Kali.</li>
+    <li>Relación de confianza bidireccional con el dominio hijo north.sevenkingdoms.local.</li>
+  </ul>
+
+  <h4>dc02 — WINTERFELL / north.sevenkingdoms.local</h4>
+  <ul>
+    <li>Domain Controller del <strong>dominio hijo</strong> — subordinado a sevenkingdoms.local.</li>
+    <li>Gestiona usuarios del norte: jon.snow, eddard.stark, catelyn.stark, robb.stark, sansa.stark, arya.stark, brandon.stark, samwell.tarly, sql_svc.</li>
+    <li>Tiene <strong>delegación Kerberos mal configurada</strong> (AllowedToDelegate) sobre la cuenta jon.snow — ruta de escalada principal del laboratorio.</li>
+    <li>Política de contraseñas débil — permite contraseñas de solo 5 caracteres.</li>
+    <li>Punto de entrada principal para los ataques del laboratorio.</li>
+  </ul>
+
+  <h4>srv02 — CASTELBLACK / north.sevenkingdoms.local</h4>
+  <ul>
+    <li>Servidor <strong>miembro del dominio hijo</strong> — no es Domain Controller.</li>
+    <li>Tiene <strong>SQL Server Express</strong> instalado con la cuenta de servicio sql_svc.</li>
+    <li>SPN registrado: <code>MSSQLSvc/castelblack.north.sevenkingdoms.local:1433</code> — vulnerable a Kerberoasting.</li>
+    <li>Impersonación SQL configurada: samwell.tarly puede impersonar a sa, arya.stark puede impersonar a dbo.</li>
+    <li>Puerto 1433 TCP habilitado — accesible desde Kali con credenciales válidas.</li>
+  </ul>
+
+  <h3>1.3 Vulnerabilidades preconfiguradas y ataques posibles</h3>
+  <p>GOAD configura deliberadamente estas vulnerabilidades que representan errores comunes en entornos corporativos reales:</p>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Vulnerabilidad</th>
+        <th>VM afectada</th>
+        <th>Técnica de ataque</th>
+        <th>Semana</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>SPNs con contraseñas débiles (sansa.stark, sql_svc)</td>
+        <td>dc02, srv02</td>
+        <td>Kerberoasting</td>
+        <td>3</td>
+      </tr>
+      <tr>
+        <td>Delegación Kerberos mal configurada (jon.snow)</td>
+        <td>dc02</td>
+        <td>Constrained Delegation Abuse</td>
+        <td>3</td>
+      </tr>
+      <tr>
+        <td>Cuentas sin pre-autenticación Kerberos</td>
+        <td>dc02</td>
+        <td>AS-REP Roasting</td>
+        <td>4</td>
+      </tr>
+      <tr>
+        <td>ACLs mal configuradas (GenericWrite, WriteDacl)</td>
+        <td>dc01, dc02</td>
+        <td>ACL Abuse</td>
+        <td>5</td>
+      </tr>
+      <tr>
+        <td>Relación de confianza padre-hijo explotable</td>
+        <td>dc01 ↔ dc02</td>
+        <td>Cross-domain attack</td>
+        <td>5</td>
+      </tr>
+      <tr>
+        <td>SQL Server — impersonación de usuarios</td>
+        <td>srv02</td>
+        <td>MSSQL privilege escalation</td>
+        <td>6</td>
+      </tr>
+      <tr>
+        <td>ADCS — plantillas vulnerables ESC1</td>
+        <td>dc01</td>
+        <td>Certificate abuse</td>
+        <td>7</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>1.4 Credenciales de acceso a las VMs</h3>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>VM / Cuenta</th>
+        <th>Usuario</th>
+        <th>Contraseña</th>
+        <th>Tipo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>dc01</strong></td>
+        <td>vagrant</td>
+        <td>vagrant</td>
+        <td>Administrador local</td>
+      </tr>
+      <tr>
+        <td><strong>dc01</strong></td>
+        <td>administrator</td>
+        <td>8dCT-DJjgScp</td>
+        <td>Administrador local</td>
+      </tr>
+      <tr>
+        <td><strong>dc02</strong></td>
+        <td>vagrant</td>
+        <td>vagrant</td>
+        <td>Administrador local</td>
+      </tr>
+      <tr>
+        <td><strong>dc02</strong></td>
+        <td>administrator</td>
+        <td>NgtI75cKV+Pu</td>
+        <td>Administrador local</td>
+      </tr>
+      <tr>
+        <td><strong>srv02</strong></td>
+        <td>vagrant</td>
+        <td>vagrant</td>
+        <td>Administrador local</td>
+      </tr>
+      <tr>
+        <td><strong>Dominio norte</strong></td>
+        <td>jon.snow</td>
+        <td>iknownothing</td>
+        <td>Usuario de dominio estándar</td>
+      </tr>
+      <tr>
+        <td><strong>Dominio norte</strong></td>
+        <td>sql_svc</td>
+        <td>YouShallNotPass!</td>
+        <td>Cuenta de servicio SQL</td>
+      </tr>
+      <tr>
+        <td><strong>SQL Server</strong></td>
+        <td>sa</td>
+        <td>Sup1_sa_P@ssw0rd!</td>
+        <td>Administrador SQL</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
+    <strong>⚠️ Aviso de seguridad:</strong> Estas credenciales son de uso exclusivo en el laboratorio GOAD. Las VMs deben correr en la red VMnet5 aislada y nunca estar expuestas a internet ni a redes de producción. Las contraseñas débiles son intencionales para los ejercicios.
+  </div>
+
+  <hr>
+
+  <h2>🖥️ FASE 2: Importación de las VMs en VMware</h2>
+
+  <h3>2.1 Requisitos previos</h3>
+  <ul>
+    <li>VMware Workstation instalado en tu equipo.</li>
+    <li>Kali Linux funcionando (de laboratorios anteriores).</li>
+    <li>Carpeta compartida del curso disponible con los archivos de las 3 VMs.</li>
+    <li>Espacio en disco: mínimo <strong>80 GB libres</strong> para las 3 VMs.</li>
+    <li>RAM: mínimo <strong>16 GB</strong> en el equipo host para correr todas las VMs simultáneamente.</li>
+  </ul>
+
+  <h3>2.2 Estructura de archivos por VM</h3>
+  <p>Cada VM viene en una carpeta con 3 archivos. Los tres deben estar en la misma carpeta para poder importar correctamente:</p>
+  <ul>
+    <li><strong>.ovf</strong> — descriptor XML que define la configuración de la VM (CPU, RAM, red, sistema operativo).</li>
+    <li><strong>.vmdk</strong> — el disco duro virtual con el sistema operativo y toda la configuración de GOAD instalada.</li>
+    <li><strong>.mf</strong> — manifiesto de integridad con hashes SHA de los archivos para verificar que no están corruptos durante la transferencia.</li>
+  </ul>
+
+  <h3>2.3 Importar cada VM en VMware</h3>
+  <p>Repetir estos pasos para las tres VMs en este orden: <strong>dc01</strong> primero, luego <strong>dc02</strong> y finalmente <strong>srv02</strong>.</p>
+  <ol>
+    <li>Abrir <strong>VMware Workstation</strong>.</li>
+    <li>Ir a <strong>File → Open</strong>.</li>
+    <li>Navegar a la carpeta de la VM y seleccionar el archivo <strong>.ovf</strong>.</li>
+    <li>En la ventana de importación asignar un nombre descriptivo (ej: <em>GOAD-dc01</em>, <em>GOAD-dc02</em>, <em>GOAD-srv02</em>).</li>
+    <li>Elegir la carpeta de destino donde se guardará la VM importada.</li>
+    <li>Hacer clic en <strong>Import</strong> — el proceso tarda entre 3 y 8 minutos por VM según la velocidad del disco.</li>
+    <li>Si VMware muestra una advertencia sobre compatibilidad OVF, hacer clic en <strong>Retry</strong> para continuar igualmente.</li>
+  </ol>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Importante:</strong> No encender las VMs todavía. Primero hay que configurar la red VMnet5 para que todas queden conectadas correctamente desde el primer arranque.
+  </div>
+
+  <h3>2.4 Configurar VMnet5 en Virtual Network Editor</h3>
+  <p>
+    <strong>¿Qué es VMnet?</strong> Una red virtual interna dentro de VMware que permite que las VMs se comuniquen entre sí de forma aislada, sin acceso desde el exterior. VMnet5 en modo Host-only crea un segmento de red privado accesible solo desde las VMs y el equipo host.
+  </p>
+  <ol>
+    <li>En VMware ir a <strong>Edit → Virtual Network Editor</strong>.</li>
+    <li>Si VMnet5 no existe, hacer clic en <strong>Add Network</strong> y seleccionar <strong>VMnet5</strong>.</li>
+    <li>Configurar con estos parámetros:
+      <ul>
+        <li><strong>Type:</strong> Host-only</li>
+        <li><strong>Subnet IP:</strong> 192.168.56.0</li>
+        <li><strong>Subnet Mask:</strong> 255.255.255.0</li>
+        <li><strong>DHCP:</strong> habilitado — Kali obtendrá su IP automáticamente; los servidores ignoran DHCP porque tienen IPs estáticas configuradas internamente.</li>
+      </ul>
+    </li>
+    <li>Hacer clic en <strong>Apply</strong> y luego en <strong>OK</strong>.</li>
+  </ol>
+
+  <h3>2.5 Asignar adaptadores de red a cada VM</h3>
+  <p>Cada servidor Windows tiene dos tarjetas de red. Verificar que estén configuradas correctamente — hacer clic derecho en cada VM → <strong>Settings → Network Adapter</strong>:</p>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>VM</th>
+        <th>Adapter 1</th>
+        <th>Adapter 2</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>dc01</strong></td>
+        <td>VMnet5 — red interna del lab (IP estática 192.168.56.10)</td>
+        <td>NAT — internet (no modificar)</td>
+      </tr>
+      <tr>
+        <td><strong>dc02</strong></td>
+        <td>VMnet5 — red interna del lab (IP estática 192.168.56.11)</td>
+        <td>NAT — internet (no modificar)</td>
+      </tr>
+      <tr>
+        <td><strong>srv02</strong></td>
+        <td>VMnet5 — red interna del lab (IP estática 192.168.56.22)</td>
+        <td>NAT — internet (no modificar)</td>
+      </tr>
+      <tr>
+        <td><strong>Kali</strong></td>
+        <td>VMnet5 — obtendrá IP por DHCP en rango 192.168.56.x</td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+
+  <h3>2.6 Encender las VMs y verificar conectividad</h3>
+  <p>Encender siempre en este orden, esperar a que una VM inicie toda para encender la siguiente — el dominio necesita que los DCs estén disponibles antes de que los servidores miembro intenten unirse:</p>
+  <ol>
+    <li>Encender <strong>dc01</strong> → esperar hasta ver la pantalla de login (~2 minutos).</li>
+    <li>Encender <strong>dc02</strong> → esperar hasta ver la pantalla de login.</li>
+    <li>Encender <strong>srv02</strong> → esperar hasta ver la pantalla de login.</li>
+    <li>Encender <strong>Kali Linux</strong> → desde aquí se ejecutan todas las herramientas.</li>
+  </ol>
+
+  <p>Verificar conectividad desde una terminal de Kali:</p>
+  <pre><code>ping -c2 192.168.56.10   # dc01 — KINGSLANDING
+ping -c2 192.168.56.11   # dc02 — WINTERFELL
+ping -c2 192.168.56.22   # srv02 — CASTELBLACK</code></pre>
+  <p>Los tres pings deben responder con tiempo de respuesta bajo. Si alguno falla, verificar que la VM esté encendida y que el Adapter 1 esté asignado a VMnet5.</p>
+
+
+
+  <hr>
+
+   <h3>2.7 Configurar DNS en Kali y verificar resolución de nombres</h3>
+  <p>
+    Para que Kali pueda resolver los nombres de host del dominio Active Directory (como <code>winterfell.north.sevenkingdoms.local</code>), es necesario apuntar el DNS al Domain Controller. Sin esta configuración, herramientas como bloodhound-python no podrán conectarse correctamente al dominio aunque el ping funcione.
+  </p>
+  <pre><code>sudo nano /etc/resolv.conf</code></pre>
+  <p>Agregar estas dos líneas al <strong>inicio</strong> del archivo, antes de cualquier otro nameserver existente, y guardar con <strong>Ctrl+O → Enter → Ctrl+X</strong>:</p>
+  <pre><code>nameserver 192.168.56.11
+nameserver 192.168.56.10</code></pre>
+
+  <p>Una vez guardado, verificar que el DNS resuelve correctamente:</p>
+  <pre><code>nslookup winterfell.north.sevenkingdoms.local</code></pre>
+
+  <p><strong>Resultado esperado si el DNS funciona correctamente:</strong></p>
+  <pre><code>Server:         192.168.56.11
+Address:        192.168.56.11#53
+
+Name:   winterfell.north.sevenkingdoms.local
+Address: 192.168.56.11</code></pre>
+
+  <p><strong>Resultado si el DNS NO resuelve correctamente:</strong></p>
+  <pre><code>;; connection timed out; no servers could be reached
+
+# o bien:
+Server:         192.168.56.11
+** server cannot find winterfell.north.sevenkingdoms.local: NXDOMAIN</code></pre>
+
+  <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
+    <strong>Si el DNS no resuelve — verificar lo siguiente en orden:</strong>
+    <ul style="margin-top: 10px; margin-bottom: 0;">
+      <li><strong>Connection timed out:</strong> dc02 no está respondiendo. Verificar que la VM está encendida y que <code>ping 192.168.56.11</code> responde. Si no responde, revisar que el Adapter 1 de dc02 esté asignado a VMnet5.</li>
+      <li><strong>NXDOMAIN:</strong> dc02 responde pero no reconoce el dominio. Verificar que <code>/etc/resolv.conf</code> tiene <code>nameserver 192.168.56.11</code> en la primera línea, sin otros nameservers antes.</li>
+      <li><strong>Los cambios se pierden al reiniciar:</strong> NetworkManager puede regenerar <code>/etc/resolv.conf</code> automáticamente. Configurar el DNS en la interfaz gráfica: ícono de red → <strong>Edit Connections → VMnet5 → IPv4 → DNS servers</strong> → ingresar <code>192.168.56.11, 192.168.56.10</code> → guardar y reconectar.</li>
+    </ul>
+  </div>
+
+
+
+  <h2>🔧 FASE 3: Instalación de BloodHound CE en Kali Linux</h2>
+
+  <h3>3.1 Componentes de BloodHound CE — ¿qué vamos a instalar?</h3>
+  <p>BloodHound CE es una aplicación de múltiples componentes. Antes de instalar es importante entender qué hace cada pieza:</p>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Componente</th>
+        <th>Qué es</th>
+        <th>Para qué sirve en BloodHound</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Docker</strong></td>
+        <td>Plataforma de contenedores que empaqueta aplicaciones con todas sus dependencias.</td>
+        <td>Levanta todos los componentes de BloodHound con un solo comando, sin conflictos de dependencias entre versiones.</td>
+      </tr>
+      <tr>
+        <td><strong>BloodHound CE</strong></td>
+        <td>Aplicación web desarrollada por SpecterOps para análisis de AD. Versión 9.x.</td>
+        <td>Interfaz visual donde se importan los datos del dominio y se calculan rutas de ataque mediante grafos.</td>
+      </tr>
+      <tr>
+        <td><strong>Neo4j</strong></td>
+        <td>Base de datos de grafos — almacena nodos (objetos AD) y aristas (relaciones entre ellos).</td>
+        <td>Permite calcular la ruta más corta entre dos objetos usando algoritmos de grafos como Dijkstra.</td>
+      </tr>
+      <tr>
+        <td><strong>PostgreSQL</strong></td>
+        <td>Base de datos relacional de código abierto.</td>
+        <td>Gestiona usuarios, sesiones y configuración interna de la aplicación BloodHound.</td>
+      </tr>
+      <tr>
+        <td><strong>bloodhound-python</strong></td>
+        <td>Colector Python externo que se ejecuta desde Kali.</td>
+        <td>Se conecta al dominio AD via LDAP y Kerberos, recolecta todos los objetos y relaciones, y los exporta en formato compatible con BloodHound CE v9.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 Instalar Docker</h3>
   <pre><code>sudo apt update
 sudo apt install -y docker.io docker-compose
 sudo systemctl start docker
@@ -126,75 +476,82 @@ sudo systemctl enable docker
 sudo usermod -aG docker $USER
 newgrp docker</code></pre>
   <ul>
-    <li><strong>Explicación:</strong> Instala Docker y Docker Compose, habilita el servicio y agrega el usuario al grupo docker para no requerir sudo en cada comando.</li>
-    <li><strong>Verificación:</strong> Ejecutar <code>docker --version</code> — debe mostrar Docker version 24.x o superior.</li>
+    <li><strong>docker.io:</strong> el motor Docker que ejecuta y gestiona los contenedores.</li>
+    <li><strong>docker-compose:</strong> herramienta para orquestar múltiples contenedores con un solo archivo de configuración YAML.</li>
+    <li><strong>usermod -aG docker:</strong> agrega el usuario al grupo docker para no requerir sudo en cada comando.</li>
+    <li><strong>Verificación:</strong> ejecutar <code>docker --version</code> — debe mostrar Docker version 24.x o superior.</li>
   </ul>
 
-  <h3>2. Descargar BloodHound CE</h3>
+  <h3>3.3 Descargar BloodHound CE</h3>
   <pre><code>mkdir -p ~/Desktop/laboratorio
 cd ~/Desktop/laboratorio
 git clone https://github.com/SpecterOps/BloodHound.git bloodhound
 cd bloodhound</code></pre>
-  <ul>
-    <li><strong>Explicación:</strong> Clona el repositorio oficial de BloodHound CE desde GitHub en la carpeta de trabajo del laboratorio.</li>
-  </ul>
 
-  <h3>3. Configurar BloodHound CE</h3>
+  <h3>3.4 Configurar BloodHound CE</h3>
   <pre><code>cp examples/docker-compose/docker-compose.yml docker-compose.yml</code></pre>
   <ul>
-    <li><strong>Explicación:</strong> Copia el archivo de configuración de ejemplo. Este archivo define los tres contenedores que necesita BloodHound: la aplicación, Neo4j y PostgreSQL.</li>
+    <li>Copia el archivo de configuración de ejemplo que define los tres contenedores con sus parámetros de red, puertos y variables de entorno.</li>
   </ul>
 
-  <h3>4. Iniciar BloodHound CE</h3>
+  <h3>3.5 Iniciar BloodHound CE</h3>
   <pre><code>docker compose up -d</code></pre>
   <ul>
-    <li><strong>Explicación:</strong> Inicia los tres contenedores en segundo plano. La primera vez descarga las imágenes Docker (~2 GB) — puede tardar entre 5 y 10 minutos.</li>
-    <li><strong>Verificación:</strong> Ejecutar <code>docker ps</code> — deben aparecer 3 contenedores en estado <strong>healthy</strong>.</li>
+    <li>Inicia los tres contenedores en segundo plano. La primera vez descarga las imágenes Docker (~2 GB) — puede tardar entre 5 y 10 minutos.</li>
+    <li><strong>Verificación:</strong> ejecutar <code>docker ps</code> — deben aparecer 3 contenedores en estado <strong>healthy</strong>:
+      <ul>
+        <li><code>bloodhound-bloodhound-1</code> — la aplicación BloodHound CE.</li>
+        <li><code>bloodhound-graph-db-1</code> — Neo4j, la base de datos de grafos.</li>
+        <li><code>bloodhound-app-db-1</code> — PostgreSQL, la base de datos de configuración.</li>
+      </ul>
+    </li>
   </ul>
 
-  <h3>5. Obtener la contraseña inicial</h3>
+  <h3>3.6 Obtener la contraseña inicial</h3>
   <pre><code>sleep 30
 docker logs bloodhound-bloodhound-1 2>&1 | grep -i "initial"</code></pre>
   <ul>
-    <li><strong>Explicación:</strong> BloodHound CE genera una contraseña aleatoria en el primer arranque. Esta contraseña solo aparece una vez en los logs — anotarla antes de continuar.</li>
+    <li>BloodHound CE genera una contraseña aleatoria en el primer arranque. <strong>Anotar esta contraseña antes de continuar</strong> — solo aparece una vez.</li>
     <li><strong>Salida esperada:</strong> <code># Initial Password Set To:    a9TnkXHJyevmiGYOUSbC316VOFzjqrIx</code></li>
   </ul>
 
   <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
-    <strong>⚠️ Importante:</strong> Si el contenedor de BloodHound cae al hacer login, la causa más probable es falta de RAM. Apagar todas las VMs de GOAD y reiniciar Kali con al menos 8 GB asignados en VMware Settings antes de continuar.
+    <strong>⚠️ Si el contenedor de BloodHound cae al hacer login:</strong> La causa más probable es falta de RAM. Kali necesita al menos <strong>8 GB asignados</strong> en VMware Settings. Apagar las VMs de GOAD, ajustar la RAM de Kali y volver a intentar.
     <br><br>
-    Si perdiste la contraseña inicial, recrea los contenedores con: <code>docker compose down -v && docker compose up -d</code> y vuelve a leer los logs.
+    Si perdiste la contraseña inicial: <code>docker compose down -v &amp;&amp; docker compose up -d</code> — luego volver a leer los logs.
   </div>
 
-  <h3>6. Primer login en BloodHound CE</h3>
+  <h3>3.7 Primer login en BloodHound CE</h3>
   <p>Abrir el navegador en Kali y navegar a:</p>
   <pre><code>http://localhost:8080</code></pre>
   <ul>
     <li><strong>Email:</strong> <code>admin</code></li>
-    <li><strong>Password:</strong> la contraseña obtenida en el paso anterior</li>
-    <li>BloodHound pedirá cambiar la contraseña en el primer login — elegir una que sea fácil de recordar para el laboratorio.</li>
+    <li><strong>Password:</strong> la contraseña obtenida en el paso anterior.</li>
+    <li>BloodHound pedirá cambiar la contraseña en el primer login.</li>
   </ul>
 
-  <h3>7. Instalar el colector bloodhound-python</h3>
+  <h3>3.8 Instalar el colector bloodhound-python</h3>
   <pre><code>pip3 install bloodhound-ce --break-system-packages</code></pre>
   <ul>
-    <li><strong>Explicación:</strong> Instala la versión del colector compatible con BloodHound CE v9. La versión legacy instalada con <code>apt install bloodhound</code> genera archivos incompatibles con CE v9 y no debe usarse.</li>
-    <li><strong>Verificación:</strong> Ejecutar <code>bloodhound-python --help</code> — debe mostrar <code>BloodHound.py for BloodHound Community Edition</code>.</li>
+    <li>Instala la versión del colector compatible con BloodHound CE v9. La versión legacy (<code>apt install bloodhound</code>) genera archivos incompatibles con CE v9.</li>
+    <li><strong>Verificación:</strong> <code>bloodhound-python --help</code> → debe mostrar <code>BloodHound.py for BloodHound Community Edition</code>.</li>
   </ul>
 
   <hr>
 
-  <h2>🎯 FASE 2: Recolección de Datos del Dominio</h2>
+  <h2>🎯 FASE 4: Recolección de Datos del Dominio</h2>
 
-  <h3>8. Configurar DNS en Kali</h3>
-  <p>Para que bloodhound-python pueda resolver los nombres de host del dominio, configurar el DNS de Kali apuntando al Domain Controller:</p>
-  <p>DNS 1: 192.168.56.10</p>
-  <p>DNS 1: 192.168.56.11</p>
-  <p>Probar la resolucion de nombres con:</p>
+  <h3>4.1 Configurar DNS en Kali</h3>
+  <p>bloodhound-python necesita resolver los nombres de host del dominio AD. Configurar el DNS de Kali apuntando a los Domain Controllers:</p>
+  <pre><code>sudo nano /etc/resolv.conf</code></pre>
+  <p>Agregar al inicio y guardar con <strong>Ctrl+O → Enter → Ctrl+X</strong>:</p>
+  <pre><code>nameserver 192.168.56.11
+nameserver 192.168.56.10</code></pre>
+  <p>Verificar resolución de nombres:</p>
   <pre><code>nslookup winterfell.north.sevenkingdoms.local
-# Debe mostrar: Address: 192.168.56.11</code></pre>
+# Resultado esperado → Address: 192.168.56.11</code></pre>
 
-  <h3>9. Recolectar datos del dominio norte</h3>
+  <h3>4.2 Recolectar datos del dominio norte</h3>
   <pre><code>cd ~/Desktop/laboratorio
 bloodhound-python \
   -u jon.snow \
@@ -204,15 +561,13 @@ bloodhound-python \
   -c All \
   --zip</code></pre>
   <ul>
-    <li><strong>-u / -p:</strong> Credenciales de un usuario estándar del dominio — no se necesitan privilegios de administrador.</li>
-    <li><strong>-d:</strong> Nombre del dominio a recolectar.</li>
-    <li><strong>-ns:</strong> Servidor DNS — la IP del Domain Controller.</li>
-    <li><strong>-c All:</strong> Recolecta todos los tipos de datos: usuarios, grupos, equipos, GPOs, ACLs, sesiones y trusts.</li>
-    <li><strong>--zip:</strong> Empaqueta todos los archivos JSON en un único .zip para facilitar la importación.</li>
-    <li><strong>Salida esperada:</strong> <code>INFO: Done in 00M 03S — INFO: Compressing output into 20260422150106_bloodhound.zip</code></li>
+    <li><strong>-u / -p:</strong> credenciales de usuario estándar — no se necesitan privilegios de administrador.</li>
+    <li><strong>-c All:</strong> recolecta usuarios, grupos, equipos, GPOs, ACLs, sesiones, trusts y contenedores.</li>
+    <li><strong>--zip:</strong> empaqueta todos los JSON en un único .zip para importación directa.</li>
+    <li><strong>Salida esperada:</strong> <code>INFO: Done in 00M 03S — INFO: Compressing output into 20260422_bloodhound.zip</code></li>
   </ul>
 
-  <h3>10. Recolectar datos del dominio raíz (opcional)</h3>
+  <h3>4.3 Recolectar datos del dominio raíz</h3>
   <pre><code>bloodhound-python \
   -u jon.snow \
   -p iknownothing \
@@ -221,208 +576,133 @@ bloodhound-python \
   -c All \
   --zip</code></pre>
   <ul>
-    <li><strong>Explicación:</strong> Recolecta datos del dominio padre. Al importar ambos ZIPs en BloodHound, el grafo mostrará rutas de ataque que cruzan la relación de confianza entre dominios.</li>
+    <li>Al importar ambos ZIPs, el grafo mostrará rutas de ataque que cruzan la relación de confianza entre dominios.</li>
   </ul>
 
-  <hr>
-
-  <h2>🔍 FASE 3: Análisis en BloodHound CE</h2>
-
-  <h3>11. Importar datos en BloodHound CE</h3>
+  <h3>4.4 Importar datos en BloodHound CE</h3>
   <ol>
     <li>Abrir <code>http://localhost:8080</code> e iniciar sesión.</li>
     <li>Hacer clic en <strong>Quick Upload</strong> en el menú lateral izquierdo.</li>
-    <li>Arrastrar el archivo <code>.zip</code> generado o hacer clic para seleccionarlo.</li>
-    <li>Esperar que BloodHound procese los datos — verás la barra de progreso al 100%.</li>
-    <li>Cuando muestre <em>"All files have successfully been uploaded for ingest"</em>, hacer clic en <strong>Close</strong>.</li>
-    <li>Hacer clic en <strong>Explore</strong> en el menú lateral.</li>
+    <li>Arrastrar el primer archivo <code>.zip</code> o hacer clic para seleccionarlo.</li>
+    <li>Esperar barra de progreso al 100% → <em>"All files have successfully been uploaded for ingest"</em> → <strong>Close</strong>.</li>
+    <li>Repetir para el segundo ZIP del dominio raíz.</li>
+    <li>Hacer clic en <strong>Explore</strong> para ver el grafo.</li>
   </ol>
 
-  <h3>12. Buscar Domain Admins y analizar el grafo</h3>
-  <p>En el buscador <strong>Search Nodes</strong> escribir <code>Domain Admins</code> y seleccionar el resultado. En el panel derecho expandir:</p>
+  <hr>
+
+  <h2>🔍 FASE 5: Laboratorio Guiado — Exploración del Grafo</h2>
+
+  <p>Con los datos importados, completar las siguientes actividades. Anotar los resultados para la discusión grupal al finalizar.</p>
+
+  <h3>Actividad 1 — Explorar Domain Admins</h3>
+  <p>En <strong>Search Nodes</strong> escribir <code>Domain Admins</code> y seleccionar <code>DOMAIN ADMINS@NORTH.SEVENKINGDOMS.LOCAL</code>. En el panel derecho expandir y responder:</p>
   <ul>
-    <li><strong>Members:</strong> cuántas cuentas son Domain Admin.</li>
-    <li><strong>Inbound Object Control:</strong> cuántos objetos tienen control SOBRE Domain Admins — cada uno es una ruta de ataque potencial.</li>
-    <li><strong>Outbound Object Control:</strong> cuántos objetos controla Domain Admins — este número representa el radio de explosión si un atacante lo compromete.</li>
+    <li>¿Cuántas cuentas son miembros directos de Domain Admins? → <strong>Members</strong></li>
+    <li>¿Cuántos objetos tienen control SOBRE Domain Admins? → <strong>Inbound Object Control</strong> — cada uno es una ruta de ataque potencial.</li>
+    <li>¿Cuántos objetos controla Domain Admins? → <strong>Outbound Object Control</strong> — radio de daño si DA es comprometido.</li>
   </ul>
 
-  <h3>13. Calcular ruta de ataque con Pathfinding</h3>
-  <p>Hacer clic en la pestaña <strong>PATHFINDING</strong> en la parte superior y configurar:</p>
+  <h3>Actividad 2 — Pathfinding: de usuario estándar a Domain Admin</h3>
+  <p>Hacer clic en <strong>PATHFINDING</strong> y configurar:</p>
   <pre><code>Start Node: JON.SNOW@NORTH.SEVENKINGDOMS.LOCAL
 End Node:   DOMAIN ADMINS@NORTH.SEVENKINGDOMS.LOCAL</code></pre>
   <ul>
-    <li><strong>Resultado esperado:</strong> BloodHound mostrará una ruta de 4 saltos: <code>jon.snow → AllowedToDelegate → WINTERFELL → CoerceToTGT → north.sevenkingdoms.local → Contains → USERS → Contains → DOMAIN ADMINS</code></li>
-    <li><strong>Conclusión pedagógica:</strong> Un usuario estándar sin privilegios aparentes tiene una ruta directa hacia Domain Admin explotando una delegación Kerberos mal configurada.</li>
+    <li><strong>Resultado esperado:</strong> ruta de 4 saltos usando la delegación Kerberos mal configurada de jon.snow como punto de entrada.</li>
+    <li>Identificar cada nodo intermedio y el tipo de relación que conecta cada salto.</li>
+    <li>Responder: ¿qué relación hace posible el primer salto? ¿Qué privilegio de AD está siendo abusado?</li>
   </ul>
 
-  <h3>14. Consulta Cypher — encontrar cuentas Kerberoasteables</h3>
-  <p>Hacer clic en la pestaña <strong>CYPHER</strong> y ejecutar:</p>
+  <h3>Actividad 3 — Consulta Cypher: cuentas Kerberoasteables</h3>
+  <p>Hacer clic en <strong>CYPHER</strong> y ejecutar:</p>
   <pre><code>MATCH (u:User) WHERE u.hasspn = true
 RETURN u.name, u.admincount
 ORDER BY u.admincount DESC</code></pre>
   <ul>
-    <li><strong>Resultado esperado:</strong> Lista de cuentas con SPNs registrados — en GOAD aparecerán <code>sansa.stark</code> y <code>sql_svc</code>, ambas vulnerables a Kerberoasting.</li>
+    <li><strong>Resultado esperado:</strong> <code>sansa.stark</code> y <code>sql_svc</code> — serán los objetivos del laboratorio de Kerberoasting.</li>
+    <li>Anotar los nombres exactos de las cuentas encontradas.</li>
+  </ul>
+
+  <h3>Actividad 4 — Análisis Blue Team</h3>
+  <p>Basándose en la ruta encontrada en la Actividad 2, responder:</p>
+  <ul>
+    <li>¿Qué control defensivo cortaría el primer salto de la ruta (AllowedToDelegate)?</li>
+    <li>¿Qué grupo de seguridad de AD protege automáticamente las cuentas privilegiadas contra ataques de delegación?</li>
+    <li>¿Cómo detectarías desde un SIEM que alguien ejecutó bloodhound-python en tu red?</li>
+  </ul>
+
+  <hr>
+
+  <h2>🔵 Blue Team: Detección de BloodHound en la Red</h2>
+
+  <p>La ejecución de BloodHound genera señales detectables en múltiples fuentes de log. Un Blue Team bien configurado puede identificar la recolección en tiempo real o mediante análisis forense posterior.</p>
+
+  <h3>Indicadores en Windows Event Logs</h3>
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Event ID</th>
+        <th>Fuente</th>
+        <th>Qué indica</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>4662</code></td>
+        <td>Security Log (DC)</td>
+        <td>Acceso masivo a objetos AD via LDAP — bloodhound-python genera cientos de eventos en segundos.</td>
+      </tr>
+      <tr>
+        <td><code>4624</code></td>
+        <td>Security Log</td>
+        <td>Login de tipo 3 (red) desde una IP que no debería generar consultas LDAP masivas.</td>
+      </tr>
+      <tr>
+        <td><code>4768 / 4769</code></td>
+        <td>Security Log (DC)</td>
+        <td>Solicitudes de tickets Kerberos — volumen inusual desde un solo origen indica enumeración.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Indicadores en tráfico de red</h3>
+  <ul>
+    <li>Gran volumen de consultas LDAP en un período corto (~3 minutos) desde un solo origen.</li>
+    <li>Consultas LDAP para atributos inusuales: <code>msDS-AllowedToDelegate</code>, <code>servicePrincipalName</code>, <code>userAccountControl</code>.</li>
+    <li>Consultas SMB a <code>\\DC\SYSVOL</code> y <code>\\DC\NETLOGON</code> para enumerar GPOs.</li>
+  </ul>
+
+  <h3>Medidas defensivas</h3>
+  <ul>
+    <li><strong>Protected Users Group:</strong> agregar cuentas privilegiadas desactiva la delegación Kerberos y otros mecanismos explotables automáticamente.</li>
+    <li><strong>Reducir Inbound Object Control:</strong> revisar y eliminar permisos GenericWrite, WriteDacl y WriteOwner sobre objetos Tier Zero.</li>
+    <li><strong>Auditoría LDAP:</strong> habilitar registro de consultas LDAP en los DCs para detectar enumeraciones masivas.</li>
+    <li><strong>Alerta Event ID 4662:</strong> disparar alerta cuando una cuenta genere más de 100 eventos 4662 en menos de 5 minutos.</li>
+    <li><strong>Least Privilege:</strong> revisar regularmente la membresía de Domain Admins y eliminar cuentas innecesarias.</li>
+    <li><strong>BloodHound defensivo:</strong> el Blue Team puede usar BloodHound antes que el atacante para identificar y eliminar rutas de escalada.</li>
   </ul>
 
   <hr>
 
   <h2>📊 Resumen de Técnicas MITRE ATT&CK</h2>
   <ul>
-    <li><strong>T1589.001 - Credentials:</strong> Uso de credenciales de usuario estándar para recolección masiva de datos del dominio.</li>
-    <li><strong>T1482 - Domain Trust Discovery:</strong> BloodHound mapea la relación de confianza padre-hijo entre sevenkingdoms.local y north.sevenkingdoms.local.</li>
-    <li><strong>T1069.002 - Domain Groups:</strong> Enumeración de grupos privilegiados como Domain Admins y sus miembros.</li>
-    <li><strong>T1087.002 - Domain Account:</strong> Descubrimiento de todos los usuarios del dominio y sus atributos de seguridad.</li>
-    <li><strong>T1550 - Alternate Authentication:</strong> Identificación de rutas de ataque mediante delegación Kerberos (AllowedToDelegate).</li>
+    <li><strong>T1589.001 - Credentials:</strong> uso de credenciales de usuario estándar para recolección masiva de datos del dominio.</li>
+    <li><strong>T1482 - Domain Trust Discovery:</strong> BloodHound mapea la relación de confianza padre-hijo entre ambos dominios.</li>
+    <li><strong>T1069.002 - Domain Groups:</strong> enumeración de grupos privilegiados como Domain Admins y sus miembros.</li>
+    <li><strong>T1087.002 - Domain Account:</strong> descubrimiento de todos los usuarios y sus atributos de seguridad.</li>
+    <li><strong>T1550 - Alternate Authentication:</strong> identificación de rutas mediante delegación Kerberos (AllowedToDelegate).</li>
   </ul>
-
-  <hr>
-
-  <h2>📂 Anexo: Comandos de Gestión de BloodHound CE</h2>
-  <p>A continuación se detallan los comandos de administración diaria de BloodHound CE organizados por función.</p>
-
-  <h3>1. Gestión de contenedores Docker</h3>
-  <table border="1" cellpadding="6">
-    <thead>
-      <tr>
-        <th>Acción</th>
-        <th>Comando</th>
-        <th>Descripción</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Iniciar</strong></td>
-        <td><code>docker compose up -d</code></td>
-        <td>Arranca los 3 contenedores en segundo plano.</td>
-      </tr>
-      <tr>
-        <td><strong>Verificar estado</strong></td>
-        <td><code>docker ps</code></td>
-        <td>Lista los contenedores activos y su estado de salud.</td>
-      </tr>
-      <tr>
-        <td><strong>Detener</strong></td>
-        <td><code>docker compose down</code></td>
-        <td>Detiene los contenedores manteniendo los datos importados.</td>
-      </tr>
-      <tr>
-        <td><strong>Ver logs</strong></td>
-        <td><code>docker logs bloodhound-bloodhound-1 -f</code></td>
-        <td>Muestra los logs en tiempo real — útil para diagnosticar problemas.</td>
-      </tr>
-      <tr>
-        <td><strong>Reiniciar contenedor</strong></td>
-        <td><code>docker restart bloodhound-bloodhound-1</code></td>
-        <td>Reinicia solo el contenedor de BloodHound sin afectar la base de datos.</td>
-      </tr>
-      <tr>
-        <td><strong>Reset completo</strong></td>
-        <td><code>docker compose down -v && docker compose up -d</code></td>
-        <td>Destruye todos los datos y genera una instalación limpia con nueva contraseña.</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>2. Recolección de datos — bloodhound-python</h3>
-  <table border="1" cellpadding="6">
-    <thead>
-      <tr>
-        <th>Parámetro</th>
-        <th>Descripción</th>
-        <th>Ejemplo</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><code>-u / -p</code></td>
-        <td>Usuario y contraseña del dominio.</td>
-        <td><code>-u jon.snow -p iknownothing</code></td>
-      </tr>
-      <tr>
-        <td><code>-d</code></td>
-        <td>Nombre del dominio a recolectar.</td>
-        <td><code>-d north.sevenkingdoms.local</code></td>
-      </tr>
-      <tr>
-        <td><code>-ns</code></td>
-        <td>Servidor de nombres — IP del Domain Controller.</td>
-        <td><code>-ns 192.168.56.11</code></td>
-      </tr>
-      <tr>
-        <td><code>-c</code></td>
-        <td>Método de recolección: All, DCOnly, Group, LocalAdmin, Session, Trusts, ACL.</td>
-        <td><code>-c All</code></td>
-      </tr>
-      <tr>
-        <td><code>--zip</code></td>
-        <td>Empaqueta la salida en un archivo .zip para importación directa.</td>
-        <td><code>--zip</code></td>
-      </tr>
-      <tr>
-        <td><code>--disable-autogc</code></td>
-        <td>Deshabilita la búsqueda automática de Global Catalog — útil si hay errores de DNS.</td>
-        <td><code>--disable-autogc</code></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>3. Navegación en la interfaz BloodHound CE</h3>
-  <table border="1" cellpadding="6">
-    <thead>
-      <tr>
-        <th>Panel / Función</th>
-        <th>Descripción</th>
-        <th>Uso</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Search</strong></td>
-        <td>Busca nodos por nombre en el grafo.</td>
-        <td>Escribir <code>Domain Admins</code> o <code>user:jon.snow</code></td>
-      </tr>
-      <tr>
-        <td><strong>Pathfinding</strong></td>
-        <td>Calcula la ruta más corta entre dos nodos.</td>
-        <td>Start: usuario comprometido — End: Domain Admins</td>
-      </tr>
-      <tr>
-        <td><strong>Cypher</strong></td>
-        <td>Ejecuta consultas directas sobre la base de datos de grafos Neo4j.</td>
-        <td>Consultas personalizadas para encontrar vulnerabilidades específicas</td>
-      </tr>
-      <tr>
-        <td><strong>Quick Upload</strong></td>
-        <td>Importa archivos .zip o .json generados por bloodhound-python.</td>
-        <td>Los datos se acumulan — subir varios ZIPs enriquece el grafo</td>
-      </tr>
-      <tr>
-        <td><strong>Privilege Zones</strong></td>
-        <td>Muestra los objetos clasificados por nivel de privilegio (Tier Zero).</td>
-        <td>Identifica los activos más críticos del dominio</td>
-      </tr>
-      <tr>
-        <td><strong>Inbound Object Control</strong></td>
-        <td>Objetos que tienen control SOBRE el nodo seleccionado.</td>
-        <td>Rutas de ataque que llegan al objeto</td>
-      </tr>
-      <tr>
-        <td><strong>Outbound Object Control</strong></td>
-        <td>Objetos sobre los que el nodo seleccionado tiene control.</td>
-        <td>Radio de explosión si el objeto es comprometido</td>
-      </tr>
-    </tbody>
-  </table>
 
   <hr>
 
   <h2>💡 Lecciones Aprendidas</h2>
   <ul>
-    <li><strong>Una cuenta estándar es suficiente:</strong> bloodhound-python solo necesita una cuenta de usuario normal para mapear completamente toda la infraestructura de identidad del dominio — no requiere privilegios de administrador.</li>
-    <li><strong>Los permisos acumulados son el problema real:</strong> Las configuraciones inseguras no son visibles revisando permisos uno por uno — BloodHound los encadena y muestra la ruta completa automáticamente.</li>
-    <li><strong>La dirección de las flechas importa:</strong> En el grafo, la dirección de cada arista define quién controla a quién. Confundirla lleva a conclusiones incorrectas sobre las rutas de ataque.</li>
-    <li><strong>El radio de explosión es el indicador defensivo clave:</strong> El Outbound Object Control de Domain Admins equivale a todos los objetos del dominio — en producción pueden ser miles, lo que explica por qué comprometer DA es catastrófico.</li>
-    <li><strong>Los datos se acumulan:</strong> Cada Quick Upload agrega información al grafo sin borrar la anterior — importar ambos dominios juntos revela rutas cross-domain que no serían visibles con un solo dominio.</li>
+    <li><strong>Una cuenta estándar es suficiente:</strong> bloodhound-python no requiere privilegios de administrador para mapear completamente toda la infraestructura de identidad del dominio.</li>
+    <li><strong>Los permisos acumulados son el problema real:</strong> las configuraciones inseguras no son visibles revisando permisos uno por uno — BloodHound los encadena y muestra la ruta completa automáticamente.</li>
+    <li><strong>La dirección de las flechas importa:</strong> en el grafo, la dirección de cada arista define quién controla a quién. Confundirla lleva a conclusiones incorrectas sobre las rutas de ataque.</li>
+    <li><strong>El radio de explosión es el indicador defensivo clave:</strong> el Outbound Object Control de Domain Admins equivale a todos los objetos del dominio — en producción pueden ser miles.</li>
+    <li><strong>Los datos se acumulan:</strong> cada Quick Upload agrega información sin borrar la anterior — importar ambos dominios revela rutas cross-domain invisibles con un solo dominio.</li>
+    <li><strong>BloodHound es también una herramienta defensiva:</strong> el Blue Team puede usarlo antes que el atacante para identificar y eliminar rutas de escalada proactivamente.</li>
   </ul>
 
   <hr>
@@ -433,6 +713,7 @@ ORDER BY u.admincount DESC</code></pre>
     <li>GOAD (Game of Active Directory): <a href="https://github.com/Orange-Cyberdefense/GOAD" target="_blank">https://github.com/Orange-Cyberdefense/GOAD</a></li>
     <li>MITRE ATT&CK Matrix: <a href="https://attack.mitre.org/" target="_blank">https://attack.mitre.org/</a></li>
     <li>BloodHound Documentation: <a href="https://bloodhound.specterops.io/home" target="_blank">https://bloodhound.specterops.io/home</a></li>
+    <li>Neo4j Graph Database: <a href="https://neo4j.com/docs/" target="_blank">https://neo4j.com/docs/</a></li>
     <li>Impacket — Herramientas para protocolos Windows: <a href="https://github.com/fortra/impacket" target="_blank">https://github.com/fortra/impacket</a></li>
   </ul>
 
@@ -444,10 +725,10 @@ ORDER BY u.admincount DESC</code></pre>
   </section>
 
   <form id="form-reportar" class="form-horizontal">
-    <input type="hidden" id="titulo" name="titulo" value="BloodHound CE — Reconocimiento de Active Directory">
+    <input type="hidden" id="titulo" name="titulo" value="BloodHound CE — Reconocimiento Ofensivo de Active Directory">
     <input type="hidden" id="archivo" name="archivo" value="guia_bloodhound_ce.html">
     <input type="hidden" id="fecha" name="fecha">
-    <textarea id="comentario" name="comentario" placeholder="¿Tuviste problemas con la instalación de Docker, el login en BloodHound o la recolección de datos? Escribí aquí." required></textarea>
+    <textarea id="comentario" name="comentario" placeholder="¿Tuviste problemas importando las VMs, configurando VMnet5, instalando Docker o ejecutando la recolección de datos? Describí el error aquí." required></textarea>
     <button type="submit">Enviar Reporte</button>
   </form>
 
