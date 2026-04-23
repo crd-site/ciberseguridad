@@ -114,9 +114,9 @@
 
   <hr>
 
-  <h2>🔴 FASE 1: Preparación del Entorno GOAD</h2>
+  <h2>📖 Conceptos del Entorno GOAD</h2>
 
-  <h3>1.1 ¿Qué es GOAD?</h3>
+  <h3>¿Qué es GOAD?</h3>
   <p>
     <strong>GOAD (Game of Active Directory)</strong> es un laboratorio de seguridad de código abierto creado por Orange Cyberdefense. Despliega un entorno Active Directory completamente funcional con vulnerabilidades preconfiguradas intencionalmente, diseñado para practicar técnicas de ataque y defensa sin afectar sistemas reales.
   </p>
@@ -124,7 +124,7 @@
     A diferencia de otros laboratorios que simulan vulnerabilidades individuales, GOAD replica el comportamiento de una red corporativa real — con múltiples dominios, relaciones de confianza, cuentas de servicio y permisos mal configurados acumulados con el tiempo. Los servidores y usuarios están nombrados con personajes de <em>Game of Thrones</em> para hacerlo memorable.
   </p>
 
-  <h3>1.2 Descripción de cada VM y su rol</h3>
+  <h3>Descripción de cada VM y su rol</h3>
 
   <h4>dc01 — KINGSLANDING / sevenkingdoms.local</h4>
   <ul>
@@ -153,7 +153,7 @@
     <li>Puerto 1433 TCP habilitado — accesible desde Kali con credenciales válidas.</li>
   </ul>
 
-  <h3>1.3 Vulnerabilidades preconfiguradas y ataques posibles</h3>
+  <h3>Vulnerabilidades preconfiguradas y ataques posibles</h3>
   <p>GOAD configura deliberadamente estas vulnerabilidades que representan errores comunes en entornos corporativos reales:</p>
 
   <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
@@ -211,7 +211,7 @@
     </tbody>
   </table>
 
-  <h3>1.4 Credenciales de acceso a las VMs</h3>
+  <h3>Credenciales de acceso a las VMs</h3>
 
   <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
     <thead>
@@ -280,121 +280,17 @@
 
   <hr>
 
-  <h2>🖥️ FASE 2: Importación de las VMs en VMware</h2>
+  <h2>🔧 FASE 1: Instalación de BloodHound CE en Kali Linux</h2>
 
-  <h3>2.1 Requisitos previos</h3>
-  <ul>
-    <li>VMware Workstation instalado en tu equipo.</li>
-    <li>Kali Linux funcionando (de laboratorios anteriores).</li>
-    <li>Carpeta compartida del curso disponible con los archivos de las 3 VMs.</li>
-    <li>Espacio en disco: mínimo <strong>80 GB libres</strong> para las 3 VMs.</li>
-    <li>RAM: mínimo <strong>16 GB</strong> en el equipo host para correr todas las VMs simultáneamente.</li>
-  </ul>
-
-  <h3>2.2 Estructura de archivos por VM</h3>
-  <p>Cada VM viene en una carpeta con 3 archivos. Los tres deben estar en la misma carpeta para poder importar correctamente:</p>
-  <ul>
-    <li><strong>.ovf</strong> — descriptor XML que define la configuración de la VM (CPU, RAM, red, sistema operativo).</li>
-    <li><strong>.vmdk</strong> — el disco duro virtual con el sistema operativo y toda la configuración de GOAD instalada.</li>
-    <li><strong>.mf</strong> — manifiesto de integridad con hashes SHA de los archivos para verificar que no están corruptos durante la transferencia.</li>
-  </ul>
-
-  <h3>2.3 Importar cada VM en VMware</h3>
-  <p>Repetir estos pasos para las tres VMs en este orden: <strong>dc01</strong> primero, luego <strong>dc02</strong> y finalmente <strong>srv02</strong>.</p>
-  <ol>
-    <li>Abrir <strong>VMware Workstation</strong>.</li>
-    <li>Ir a <strong>File → Open</strong>.</li>
-    <li>Navegar a la carpeta de la VM y seleccionar el archivo <strong>.ovf</strong>.</li>
-    <li>En la ventana de importación asignar un nombre descriptivo (ej: <em>GOAD-dc01</em>, <em>GOAD-dc02</em>, <em>GOAD-srv02</em>).</li>
-    <li>Elegir la carpeta de destino donde se guardará la VM importada.</li>
-    <li>Hacer clic en <strong>Import</strong> — el proceso tarda entre 3 y 8 minutos por VM según la velocidad del disco.</li>
-    <li>Si VMware muestra una advertencia sobre compatibilidad OVF, hacer clic en <strong>Retry</strong> para continuar igualmente.</li>
-  </ol>
+  <p>Esta fase se realiza con Kali conectado a <strong>NAT</strong> para tener acceso a internet y poder descargar todos los componentes necesarios. Al finalizar la instalación se cambiará la red a VMnet5.</p>
 
   <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
-    <strong>💡 Importante:</strong> No encender las VMs todavía. Primero hay que configurar la red VMnet5 para que todas queden conectadas correctamente desde el primer arranque.
+    <strong>💡 Antes de comenzar — verificar adaptador de red de Kali:</strong> El adaptador de Kali debe estar en <strong>NAT</strong> para poder descargar paquetes desde internet.
+    <br><br>
+    En VMware: clic derecho en la VM de Kali → <strong>Settings → Network Adapter → NAT</strong> → OK. Luego desconectar y reconectar la red dentro de Kali (ícono de red → desconectar → conectar).
   </div>
 
-  <h3>2.4 Configurar VMnet5 en Virtual Network Editor</h3>
-  <p>
-    <strong>¿Qué es VMnet?</strong> Una red virtual interna dentro de VMware que permite que las VMs se comuniquen entre sí de forma aislada, sin acceso desde el exterior. VMnet5 en modo Host-only crea un segmento de red privado accesible solo desde las VMs y el equipo host.
-  </p>
-  <ol>
-    <li>En VMware ir a <strong>Edit → Virtual Network Editor</strong>.</li>
-    <li>Si VMnet5 no existe, hacer clic en <strong>Add Network</strong> y seleccionar <strong>VMnet5</strong>.</li>
-    <li>Configurar con estos parámetros:
-      <ul>
-        <li><strong>Type:</strong> Host-only</li>
-        <li><strong>Subnet IP:</strong> 192.168.56.0</li>
-        <li><strong>Subnet Mask:</strong> 255.255.255.0</li>
-        <li><strong>DHCP:</strong> habilitado — Kali obtendrá su IP automáticamente; los servidores ignoran DHCP porque tienen IPs estáticas configuradas internamente.</li>
-      </ul>
-    </li>
-    <li>Hacer clic en <strong>Apply</strong> y luego en <strong>OK</strong>.</li>
-  </ol>
-
-  <h3>2.5 Asignar adaptadores de red a cada VM</h3>
-  <p>Cada servidor Windows tiene dos tarjetas de red. Verificar que estén configuradas correctamente — hacer clic derecho en cada VM → <strong>Settings → Network Adapter</strong>:</p>
-
-  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-    <thead>
-      <tr style="background-color: #2e2323;">
-        <th>VM</th>
-        <th>Adapter 1</th>
-        <th>Adapter 2</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>dc01</strong></td>
-        <td>VMnet5 — red interna del lab (IP estática 192.168.56.10)</td>
-        <td>NAT — internet (no modificar)</td>
-      </tr>
-      <tr>
-        <td><strong>dc02</strong></td>
-        <td>VMnet5 — red interna del lab (IP estática 192.168.56.11)</td>
-        <td>NAT — internet (no modificar)</td>
-      </tr>
-      <tr>
-        <td><strong>srv02</strong></td>
-        <td>VMnet5 — red interna del lab (IP estática 192.168.56.22)</td>
-        <td>NAT — internet (no modificar)</td>
-      </tr>
-      <tr>
-        <td><strong>Kali</strong></td>
-        <td>VMnet5 — obtendrá IP por DHCP en rango 192.168.56.x</td>
-        <td>—</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h3>2.6 Encender las VMs y verificar conectividad</h3>
-  <p>Encender siempre en este orden, esperar a que cada VM inicie completamente antes de encender la siguiente — el dominio necesita que los DCs estén disponibles antes de que los servidores miembro intenten unirse:</p>
-  <ol>
-    <li>Encender <strong>dc01</strong> → esperar hasta ver la pantalla de login (~2 minutos).</li>
-    <li>Encender <strong>dc02</strong> → esperar hasta ver la pantalla de login.</li>
-    <li>Encender <strong>srv02</strong> → esperar hasta ver la pantalla de login.</li>
-    <li>Encender <strong>Kali Linux</strong> → desde aquí se ejecutan todas las herramientas.</li>
-  </ol>
-
-  <p>Verificar conectividad desde una terminal de Kali:</p>
-  <pre><code>ping -c2 192.168.56.10   # dc01 — KINGSLANDING
-ping -c2 192.168.56.11   # dc02 — WINTERFELL
-ping -c2 192.168.56.22   # srv02 — CASTELBLACK</code></pre>
-  <p>Los tres pings deben responder con tiempo de respuesta bajo. Si alguno falla, verificar que la VM esté encendida y que el Adapter 1 esté asignado a VMnet5.</p>
-
-  
-  <hr>
-
-  <h2>🔧 FASE 3: Instalación de BloodHound CE en Kali Linux</h2>
-
-  <h3>3.1 Componentes de BloodHound CE — ¿qué vamos a instalar?</h3>
-
-  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
-    <strong>💡 Importante:</strong> Antes de instalar, debemos cambiar la conexion del adaptador de red virtual del Kali a NAT (VM | Setting | Network Adapter | NAT) guardar, desconectar por 10 segundos y volver a conectar)
-  </div>
-
-
+  <h3>1.1 Componentes que vamos a instalar</h3>
   <p>BloodHound CE es una aplicación de múltiples componentes. Antes de instalar es importante entender qué hace cada pieza:</p>
 
   <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
@@ -439,17 +335,16 @@ ping -c2 192.168.56.22   # srv02 — CASTELBLACK</code></pre>
     </tbody>
   </table>
 
-  <h3>3.2 Verificar e instalar Git</h3>
-    <h3>Antes de instalar, debemos cambiar adaptador de red virtual a NAT (VM|Setting|Network Adaptar|NAT)</h3>
+  <h3>1.2 Verificar Git</h3>
   <p>
-    <strong>Git</strong> es un sistema de control de versiones que permite descargar repositorios completos desde plataformas como GitHub. Se usa para obtener el repositorio oficial de BloodHound CE con todos sus archivos de configuración. Kali Linux lo incluye por defecto, pero es buena práctica verificarlo antes de continuar:
+    <strong>Git</strong> es un sistema de control de versiones que permite descargar repositorios completos desde plataformas como GitHub. Kali Linux lo incluye por defecto, pero verificar antes de continuar:
   </p>
   <pre><code>git --version
 # Resultado esperado: git version 2.x.x</code></pre>
-  <p>Si por algún motivo no está instalado, ejecutar:</p>
+  <p>Si por algún motivo no está instalado:</p>
   <pre><code>sudo apt update && sudo apt install -y git</code></pre>
 
-  <h3>3.3 Instalar Docker</h3>
+  <h3>1.3 Instalar Docker</h3>
   <pre><code>sudo apt update
 sudo apt install -y docker.io docker-compose
 sudo systemctl start docker
@@ -463,55 +358,19 @@ newgrp docker</code></pre>
     <li><strong>Verificación:</strong> ejecutar <code>docker --version</code> — debe mostrar Docker version 24.x o superior.</li>
   </ul>
 
-  <h3>3.4 Descargar BloodHound CE</h3>
+  <h3>1.4 Descargar BloodHound CE</h3>
   <pre><code>mkdir -p ~/Desktop/laboratorio
 cd ~/Desktop/laboratorio
 git clone https://github.com/SpecterOps/BloodHound.git bloodhound
 cd bloodhound</code></pre>
 
-  <h3>3.5 Configurar BloodHound CE</h3>
+  <h3>1.5 Configurar BloodHound CE</h3>
   <pre><code>cp examples/docker-compose/docker-compose.yml docker-compose.yml</code></pre>
   <ul>
     <li>Copia el archivo de configuración de ejemplo que define los tres contenedores con sus parámetros de red, puertos y variables de entorno.</li>
   </ul>
 
-  <h3>3.6 Iniciar BloodHound CE</h3>
-  <pre><code>docker compose up -d</code></pre>
-  <ul>
-    <li>Inicia los tres contenedores en segundo plano. La primera vez descarga las imágenes Docker (~2 GB) — puede tardar entre 5 y 10 minutos.</li>
-    <li><strong>Verificación:</strong> ejecutar <code>docker ps</code> — deben aparecer 3 contenedores en estado <strong>healthy</strong>:
-      <ul>
-        <li><code>bloodhound-bloodhound-1</code> — la aplicación BloodHound CE.</li>
-        <li><code>bloodhound-graph-db-1</code> — Neo4j, la base de datos de grafos.</li>
-        <li><code>bloodhound-app-db-1</code> — PostgreSQL, la base de datos de configuración.</li>
-      </ul>
-    </li>
-  </ul>
-
-  <h3>3.7 Obtener la contraseña inicial</h3>
-  <pre><code>sleep 30
-docker logs bloodhound-bloodhound-1 2>&1 | grep -i "initial"</code></pre>
-  <ul>
-    <li>BloodHound CE genera una contraseña aleatoria en el primer arranque. <strong>Anotar esta contraseña antes de continuar</strong> — solo aparece una vez.</li>
-    <li><strong>Salida esperada:</strong> <code># Initial Password Set To:    a9TnkXHJyevmiGYOUSbC316VOFzjqrIx</code></li>
-  </ul>
-
-  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
-    <strong>⚠️ Si el contenedor de BloodHound cae al hacer login:</strong> La causa más probable es falta de RAM. Kali necesita al menos <strong>8 GB asignados</strong> en VMware Settings. Apagar las VMs de GOAD, ajustar la RAM de Kali y volver a intentar.
-    <br><br>
-    Si perdiste la contraseña inicial: <code>docker compose down -v &amp;&amp; docker compose up -d</code> — luego volver a leer los logs.
-  </div>
-
-  <h3>3.8 Primer login en BloodHound CE</h3>
-  <p>Abrir el navegador en Kali y navegar a:</p>
-  <pre><code>http://localhost:8080</code></pre>
-  <ul>
-    <li><strong>Email:</strong> <code>admin</code></li>
-    <li><strong>Password:</strong> la contraseña obtenida en el paso anterior.</li>
-    <li>BloodHound pedirá cambiar la contraseña en el primer login.</li>
-  </ul>
-
-  <h3>3.9 Instalar el colector bloodhound-python</h3>
+  <h3>1.6 Instalar el colector bloodhound-python</h3>
   <pre><code>pip3 install bloodhound-ce --break-system-packages</code></pre>
   <ul>
     <li>Instala la versión del colector compatible con BloodHound CE v9. La versión legacy (<code>apt install bloodhound</code>) genera archivos incompatibles con CE v9.</li>
@@ -520,21 +379,131 @@ docker logs bloodhound-bloodhound-1 2>&1 | grep -i "initial"</code></pre>
 
   <hr>
 
-  <h2>🎯 FASE 4: Recolección de Datos del Dominio</h2>
+  <h2>🖥️ FASE 2: Importación de las VMs GOAD en VMware</h2>
 
+  <h3>2.1 Requisitos previos</h3>
+  <ul>
+    <li>VMware Workstation instalado en tu equipo.</li>
+    <li>Carpeta compartida del curso disponible con los archivos de las 3 VMs.</li>
+    <li>Espacio en disco: mínimo <strong>80 GB libres</strong> para las 3 VMs.</li>
+    <li>RAM: mínimo <strong>16 GB</strong> en el equipo host para correr todas las VMs simultáneamente.</li>
+  </ul>
 
+  <h3>2.2 Estructura de archivos por VM</h3>
+  <p>Cada VM viene en una carpeta con 3 archivos. Los tres deben estar en la misma carpeta para importar correctamente:</p>
+  <ul>
+    <li><strong>.ovf</strong> — descriptor XML que define la configuración de la VM (CPU, RAM, red, sistema operativo).</li>
+    <li><strong>.vmdk</strong> — el disco duro virtual con el sistema operativo y toda la configuración de GOAD instalada.</li>
+    <li><strong>.mf</strong> — manifiesto de integridad con hashes SHA para verificar que los archivos no están corruptos durante la transferencia.</li>
+  </ul>
 
+  <h3>2.3 Importar cada VM en VMware</h3>
+  <p>Repetir estos pasos para las tres VMs en este orden: <strong>dc01</strong> primero, luego <strong>dc02</strong> y finalmente <strong>srv02</strong>.</p>
+  <ol>
+    <li>Abrir <strong>VMware Workstation</strong>.</li>
+    <li>Ir a <strong>File → Open</strong>.</li>
+    <li>Navegar a la carpeta de la VM y seleccionar el archivo <strong>.ovf</strong>.</li>
+    <li>Asignar un nombre descriptivo (ej: <em>GOAD-dc01</em>, <em>GOAD-dc02</em>, <em>GOAD-srv02</em>).</li>
+    <li>Elegir la carpeta de destino y hacer clic en <strong>Import</strong> — tarda entre 3 y 8 minutos por VM.</li>
+    <li>Si VMware muestra una advertencia sobre compatibilidad OVF, hacer clic en <strong>Retry</strong> para continuar.</li>
+  </ol>
 
-<h3>Configurar DNS en Kali y verificar resolución de nombres</h3>
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Importante:</strong> No encender las VMs todavía. Primero configurar la red VMnet5 para que todas queden conectadas correctamente desde el primer arranque.
+  </div>
+
+  <h3>2.4 Configurar VMnet5 en Virtual Network Editor</h3>
   <p>
-    Para que Kali pueda resolver los nombres de host del dominio Active Directory (como <code>winterfell.north.sevenkingdoms.local</code>), es necesario apuntar el DNS al Domain Controller. Sin esta configuración, herramientas como bloodhound-python no podrán conectarse correctamente al dominio aunque el ping funcione.
+    <strong>¿Qué es VMnet?</strong> Una red virtual interna dentro de VMware que permite que las VMs se comuniquen entre sí de forma aislada, sin acceso desde el exterior. VMnet5 en modo Host-only crea un segmento de red privado accesible solo desde las VMs y el equipo host.
+  </p>
+  <ol>
+    <li>En VMware ir a <strong>Edit → Virtual Network Editor</strong>.</li>
+    <li>Si VMnet5 no existe, hacer clic en <strong>Add Network</strong> y seleccionar <strong>VMnet5</strong>.</li>
+    <li>Configurar con estos parámetros:
+      <ul>
+        <li><strong>Type:</strong> Host-only</li>
+        <li><strong>Subnet IP:</strong> 192.168.56.0</li>
+        <li><strong>Subnet Mask:</strong> 255.255.255.0</li>
+        <li><strong>DHCP:</strong> habilitado — Kali obtendrá su IP automáticamente; los servidores ignoran DHCP porque tienen IPs estáticas configuradas internamente.</li>
+      </ul>
+    </li>
+    <li>Hacer clic en <strong>Apply</strong> y luego en <strong>OK</strong>.</li>
+  </ol>
+
+  <h3>2.5 Asignar adaptadores de red a cada VM</h3>
+  <p>Hacer clic derecho en cada VM → <strong>Settings → Network Adapter</strong> y verificar:</p>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>VM</th>
+        <th>Adapter 1</th>
+        <th>Adapter 2</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>dc01</strong></td>
+        <td>VMnet5 — red interna del lab (IP estática 192.168.56.10)</td>
+        <td>NAT — internet (no modificar)</td>
+      </tr>
+      <tr>
+        <td><strong>dc02</strong></td>
+        <td>VMnet5 — red interna del lab (IP estática 192.168.56.11)</td>
+        <td>NAT — internet (no modificar)</td>
+      </tr>
+      <tr>
+        <td><strong>srv02</strong></td>
+        <td>VMnet5 — red interna del lab (IP estática 192.168.56.22)</td>
+        <td>NAT — internet (no modificar)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>🔌 FASE 3: Cambiar Red de Kali a VMnet5 y Verificar Conectividad</h2>
+
+  <p>Con BloodHound CE instalado y las VMs de GOAD importadas, ahora hay que cambiar el adaptador de Kali de NAT a VMnet5 para conectarse a la red del laboratorio.</p>
+
+  <h3>3.1 Cambiar el adaptador de red de Kali a VMnet5</h3>
+  <ol>
+    <li>En VMware, clic derecho en la VM de Kali → <strong>Settings → Network Adapter</strong>.</li>
+    <li>Cambiar de <strong>NAT</strong> a <strong>VMnet5 (Host-only)</strong>.</li>
+    <li>Hacer clic en <strong>OK</strong>.</li>
+    <li>Dentro de Kali, reconectar la interfaz de red: clic en el ícono de red → desconectar → conectar. O desde terminal:
+      <pre><code>sudo ip link set eth0 down && sudo ip link set eth0 up</code></pre>
+    </li>
+    <li>Verificar que Kali obtuvo una IP en el rango 192.168.56.x:
+      <pre><code>ip addr show
+# Debe mostrar una IP en el rango 192.168.56.x en la interfaz de red</code></pre>
+    </li>
+  </ol>
+
+  <h3>3.2 Encender las VMs en el orden correcto</h3>
+  <p>Encender siempre en este orden, esperando que cada VM muestre la pantalla de login antes de encender la siguiente:</p>
+  <ol>
+    <li>Encender <strong>dc01</strong> → esperar pantalla de login (~2 minutos).</li>
+    <li>Encender <strong>dc02</strong> → esperar pantalla de login.</li>
+    <li>Encender <strong>srv02</strong> → esperar pantalla de login.</li>
+  </ol>
+
+  <h3>3.3 Verificar conectividad desde Kali</h3>
+  <pre><code>ping -c2 192.168.56.10   # dc01 — KINGSLANDING
+ping -c2 192.168.56.11   # dc02 — WINTERFELL
+ping -c2 192.168.56.22   # srv02 — CASTELBLACK</code></pre>
+  <p>Los tres pings deben responder. Si alguno falla, verificar que la VM está encendida y que su Adapter 1 está asignado a VMnet5.</p>
+
+  <h3>3.4 Configurar DNS en Kali</h3>
+  <p>
+    Para que Kali pueda resolver los nombres de host del dominio AD (como <code>winterfell.north.sevenkingdoms.local</code>), hay que apuntar el DNS al Domain Controller. Sin esta configuración, herramientas como bloodhound-python no podrán conectarse correctamente aunque el ping funcione.
   </p>
   <pre><code>sudo nano /etc/resolv.conf</code></pre>
-  <p>Agregar estas dos líneas al <strong>inicio</strong> del archivo, antes de cualquier otro nameserver existente, y guardar con <strong>Ctrl+O → Enter → Ctrl+X</strong>:</p>
+  <p>Agregar estas dos líneas al <strong>inicio</strong> del archivo, antes de cualquier otro nameserver, y guardar con <strong>Ctrl+O → Enter → Ctrl+X</strong>:</p>
   <pre><code>nameserver 192.168.56.11
 nameserver 192.168.56.10</code></pre>
 
-  <p>Una vez guardado, verificar que el DNS resuelve correctamente:</p>
+  <p>Verificar que el DNS resuelve correctamente:</p>
   <pre><code>nslookup winterfell.north.sevenkingdoms.local</code></pre>
 
   <p><strong>Resultado esperado si el DNS funciona correctamente:</strong></p>
@@ -552,16 +521,60 @@ Server:         192.168.56.11
 ** server cannot find winterfell.north.sevenkingdoms.local: NXDOMAIN</code></pre>
 
   <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
-    <strong>Si el DNS no resuelve — verificar lo siguiente en orden:</strong>
+    <strong>Si el DNS no resuelve — verificar en orden:</strong>
     <ul style="margin-top: 10px; margin-bottom: 0;">
-      <li><strong>Connection timed out:</strong> dc02 no está respondiendo. Verificar que la VM está encendida y que <code>ping 192.168.56.11</code> responde. Si no responde, revisar que el Adapter 1 de dc02 esté asignado a VMnet5.</li>
+      <li><strong>Connection timed out:</strong> dc02 no está respondiendo. Verificar que está encendida y que <code>ping 192.168.56.11</code> responde. Si no, revisar que el Adapter 1 de dc02 esté en VMnet5.</li>
       <li><strong>NXDOMAIN:</strong> dc02 responde pero no reconoce el dominio. Verificar que <code>/etc/resolv.conf</code> tiene <code>nameserver 192.168.56.11</code> en la primera línea, sin otros nameservers antes.</li>
       <li><strong>Los cambios se pierden al reiniciar:</strong> NetworkManager puede regenerar <code>/etc/resolv.conf</code> automáticamente. Configurar el DNS en la interfaz gráfica: ícono de red → <strong>Edit Connections → VMnet5 → IPv4 → DNS servers</strong> → ingresar <code>192.168.56.11, 192.168.56.10</code> → guardar y reconectar.</li>
     </ul>
   </div>
 
+  <hr>
 
-  <h3>4.2 Recolectar datos del dominio norte</h3>
+  <h2>🚀 FASE 4: Iniciar BloodHound CE y Primer Login</h2>
+
+  <h3>4.1 Iniciar BloodHound CE</h3>
+  <pre><code>cd ~/Desktop/laboratorio/bloodhound
+docker compose up -d</code></pre>
+  <ul>
+    <li>Inicia los tres contenedores en segundo plano. La primera vez descarga las imágenes Docker (~2 GB) — puede tardar entre 5 y 10 minutos.</li>
+    <li><strong>Verificación:</strong> ejecutar <code>docker ps</code> — deben aparecer 3 contenedores en estado <strong>healthy</strong>:
+      <ul>
+        <li><code>bloodhound-bloodhound-1</code> — la aplicación BloodHound CE.</li>
+        <li><code>bloodhound-graph-db-1</code> — Neo4j, base de datos de grafos.</li>
+        <li><code>bloodhound-app-db-1</code> — PostgreSQL, base de datos de configuración.</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>4.2 Obtener la contraseña inicial</h3>
+  <pre><code>sleep 30
+docker logs bloodhound-bloodhound-1 2>&1 | grep -i "initial"</code></pre>
+  <ul>
+    <li>BloodHound CE genera una contraseña aleatoria en el primer arranque. <strong>Anotar esta contraseña</strong> — solo aparece una vez en los logs.</li>
+    <li><strong>Salida esperada:</strong> <code># Initial Password Set To:    a9TnkXHJyevmiGYOUSbC316VOFzjqrIx</code></li>
+  </ul>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>⚠️ Si el contenedor de BloodHound cae al hacer login:</strong> La causa más probable es falta de RAM. Kali necesita al menos <strong>8 GB asignados</strong> en VMware Settings. Apagar las VMs de GOAD, ajustar la RAM de Kali y volver a intentar.
+    <br><br>
+    Si perdiste la contraseña inicial: <code>docker compose down -v &amp;&amp; docker compose up -d</code> y volver a leer los logs.
+  </div>
+
+  <h3>4.3 Primer login en BloodHound CE</h3>
+  <p>Abrir el navegador en Kali y navegar a:</p>
+  <pre><code>http://localhost:8080</code></pre>
+  <ul>
+    <li><strong>Email:</strong> <code>admin</code></li>
+    <li><strong>Password:</strong> la contraseña obtenida en el paso anterior.</li>
+    <li>BloodHound pedirá cambiar la contraseña en el primer login — elegir una fácil de recordar para el laboratorio.</li>
+  </ul>
+
+  <hr>
+
+  <h2>🎯 FASE 5: Recolección de Datos del Dominio</h2>
+
+  <h3>5.1 Recolectar datos del dominio norte</h3>
   <pre><code>cd ~/Desktop/laboratorio
 bloodhound-python \
   -u jon.snow \
@@ -577,7 +590,7 @@ bloodhound-python \
     <li><strong>Salida esperada:</strong> <code>INFO: Done in 00M 03S — INFO: Compressing output into 20260422_bloodhound.zip</code></li>
   </ul>
 
-  <h3>4.3 Recolectar datos del dominio raíz</h3>
+  <h3>5.2 Recolectar datos del dominio raíz</h3>
   <pre><code>bloodhound-python \
   -u jon.snow \
   -p iknownothing \
@@ -589,7 +602,7 @@ bloodhound-python \
     <li>Al importar ambos ZIPs, el grafo mostrará rutas de ataque que cruzan la relación de confianza entre dominios.</li>
   </ul>
 
-  <h3>4.4 Importar datos en BloodHound CE</h3>
+  <h3>5.3 Importar datos en BloodHound CE</h3>
   <ol>
     <li>Abrir <code>http://localhost:8080</code> e iniciar sesión.</li>
     <li>Hacer clic en <strong>Quick Upload</strong> en el menú lateral izquierdo.</li>
@@ -599,9 +612,13 @@ bloodhound-python \
     <li>Hacer clic en <strong>Explore</strong> para ver el grafo.</li>
   </ol>
 
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Los datos se acumulan:</strong> Cada Quick Upload agrega información al grafo sin borrar la anterior. Subir ambos dominios juntos enriquece el grafo y revela rutas cross-domain que no aparecerían con un solo dominio importado.
+  </div>
+
   <hr>
 
-  <h2>🔍 FASE 5: Laboratorio Guiado — Exploración del Grafo</h2>
+  <h2>🔍 FASE 6: Laboratorio Guiado — Exploración del Grafo</h2>
 
   <p>Con los datos importados, completar las siguientes actividades. Anotar los resultados para la discusión grupal al finalizar.</p>
 
@@ -629,7 +646,7 @@ End Node:   DOMAIN ADMINS@NORTH.SEVENKINGDOMS.LOCAL</code></pre>
 RETURN u.name, u.admincount
 ORDER BY u.admincount DESC</code></pre>
   <ul>
-    <li><strong>Resultado esperado:</strong> <code>sansa.stark</code> y <code>sql_svc</code> — serán los objetivos del laboratorio de Kerberoasting.</li>
+    <li><strong>Resultado esperado:</strong> <code>sansa.stark</code> y <code>sql_svc</code> — serán los objetivos del laboratorio de Kerberoasting de la próxima semana.</li>
     <li>Anotar los nombres exactos de las cuentas encontradas.</li>
   </ul>
 
@@ -689,7 +706,7 @@ ORDER BY u.admincount DESC</code></pre>
     <li><strong>Auditoría LDAP:</strong> habilitar registro de consultas LDAP en los DCs para detectar enumeraciones masivas.</li>
     <li><strong>Alerta Event ID 4662:</strong> disparar alerta cuando una cuenta genere más de 100 eventos 4662 en menos de 5 minutos.</li>
     <li><strong>Least Privilege:</strong> revisar regularmente la membresía de Domain Admins y eliminar cuentas innecesarias.</li>
-    <li><strong>BloodHound defensivo:</strong> el Blue Team puede usar BloodHound antes que el atacante para identificar y eliminar rutas de escalada.</li>
+    <li><strong>BloodHound defensivo:</strong> el Blue Team puede usar BloodHound antes que el atacante para identificar y eliminar rutas de escalada proactivamente.</li>
   </ul>
 
   <hr>
