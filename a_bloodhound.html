@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía: Instalación y Uso de BloodHound CE | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+<main>
+  <div data-include="aviso-etico"></div>
+
+  <h1>☠️ Laboratorio: BloodHound — Reconocimiento Ofensivo de Active Directory y Rutas de Escalada (Red & Blue Team)</h1>
+
+  <p>
+    Este laboratorio demuestra cómo instalar y usar <strong>BloodHound Community Edition (CE)</strong> para mapear la infraestructura de identidad de un dominio Active Directory, identificar rutas de ataque hacia <strong>Domain Admin</strong> y comprender las relaciones de privilegios entre objetos del dominio usando el entorno <strong>GOAD (Game of Active Directory)</strong>.
+  </p>
+
+  <h2>🛡️ Mapeo de Tácticas y Técnicas (MITRE ATT&CK)</h2>
+  <p>A continuación se detallan las técnicas adversariales que se implementarán en este ejercicio:</p>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Táctica</th>
+        <th>Técnica</th>
+        <th>Código MITRE</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Reconocimiento</strong></td>
+        <td>Gather Victim Identity Information: Credentials</td>
+        <td><code>T1589.001</code></td>
+      </tr>
+      <tr>
+        <td><strong>Descubrimiento</strong></td>
+        <td>Domain Trust Discovery</td>
+        <td><code>T1482</code></td>
+      </tr>
+      <tr>
+        <td><strong>Descubrimiento</strong></td>
+        <td>Permission Groups Discovery: Domain Groups</td>
+        <td><code>T1069.002</code></td>
+      </tr>
+      <tr>
+        <td><strong>Descubrimiento</strong></td>
+        <td>Account Discovery: Domain Account</td>
+        <td><code>T1087.002</code></td>
+      </tr>
+      <tr>
+        <td><strong>Movimiento Lateral</strong></td>
+        <td>Use Alternate Authentication Material</td>
+        <td><code>T1550</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>🏗️ Escenario y Arquitectura de Red</h2>
+  <div style="text-align: center;">
+    <img src="assets/img/ACL-AD.png" alt="Arquitectura de Red GOAD-Light" style="max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 8px;">
+  </div>
+
+  <p>Para que el laboratorio sea exitoso, es fundamental configurar el entorno virtual de la siguiente manera:</p>
+  <ul>
+    <li><strong>Segmento de Red:</strong> Todas las VMs (dc01, dc02, srv02 y Kali) deben estar conectadas al switch virtual <strong>VMnet5 (Host-only)</strong>.</li>
+    <li><strong>Subred:</strong> El laboratorio opera en el rango <strong>192.168.56.0/24</strong> o de acuerdo como tienes configurado el Virtual Network Editor</li>
+    <li><strong>Orden de arranque:</strong> Encender siempre en este orden: dc01 → dc02 → srv02 → Kali.</li>
+    <li><strong>Verificación de conectividad:</strong>
+      <ul>
+        <li>Desde <strong>Kali</strong>, ejecutar <i>ping 192.168.56.10</i> para verificar conectividad con dc01.</li>
+        <li>Desde <strong>Kali</strong>, ejecutar <i>ping 192.168.56.11</i> para verificar conectividad con dc02.</li>
+      </ul>
+    </li>
+    <li><strong>RAM recomendada para Kali:</strong> Mínimo <strong>8 GB</strong> asignados en VMware Settings para que BloodHound CE funcione correctamente.</li>
+  </ul>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>VM</th>
+        <th>Nombre</th>
+        <th>Dominio</th>
+        <th>IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>dc01</strong></td>
+        <td>KINGSLANDING</td>
+        <td>sevenkingdoms.local</td>
+        <td><code>192.168.56.10</code></td>
+      </tr>
+      <tr>
+        <td><strong>dc02</strong></td>
+        <td>WINTERFELL</td>
+        <td>north.sevenkingdoms.local</td>
+        <td><code>192.168.56.11</code></td>
+      </tr>
+      <tr>
+        <td><strong>srv02</strong></td>
+        <td>CASTELBLACK</td>
+        <td>north.sevenkingdoms.local</td>
+        <td><code>192.168.56.22</code></td>
+      </tr>
+      <tr>
+        <td><strong>Kali</strong></td>
+        <td>Atacante</td>
+        <td>—</td>
+        <td><code>192.168.56.x (DHCP)</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>🔧 FASE 1: Instalación de BloodHound CE en Kali Linux</h2>
+
+  <h3>1. Instalar Docker</h3>
+  <pre><code>sudo apt update
+sudo apt install -y docker.io docker-compose
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker $USER
+newgrp docker</code></pre>
+  <ul>
+    <li><strong>Explicación:</strong> Instala Docker y Docker Compose, habilita el servicio y agrega el usuario al grupo docker para no requerir sudo en cada comando.</li>
+    <li><strong>Verificación:</strong> Ejecutar <code>docker --version</code> — debe mostrar Docker version 24.x o superior.</li>
+  </ul>
+
+  <h3>2. Descargar BloodHound CE</h3>
+  <pre><code>mkdir -p ~/Desktop/laboratorio
+cd ~/Desktop/laboratorio
+git clone https://github.com/SpecterOps/BloodHound.git bloodhound
+cd bloodhound</code></pre>
+  <ul>
+    <li><strong>Explicación:</strong> Clona el repositorio oficial de BloodHound CE desde GitHub en la carpeta de trabajo del laboratorio.</li>
+  </ul>
+
+  <h3>3. Configurar BloodHound CE</h3>
+  <pre><code>cp examples/docker-compose/docker-compose.yml docker-compose.yml</code></pre>
+  <ul>
+    <li><strong>Explicación:</strong> Copia el archivo de configuración de ejemplo. Este archivo define los tres contenedores que necesita BloodHound: la aplicación, Neo4j y PostgreSQL.</li>
+  </ul>
+
+  <h3>4. Iniciar BloodHound CE</h3>
+  <pre><code>docker compose up -d</code></pre>
+  <ul>
+    <li><strong>Explicación:</strong> Inicia los tres contenedores en segundo plano. La primera vez descarga las imágenes Docker (~2 GB) — puede tardar entre 5 y 10 minutos.</li>
+    <li><strong>Verificación:</strong> Ejecutar <code>docker ps</code> — deben aparecer 3 contenedores en estado <strong>healthy</strong>.</li>
+  </ul>
+
+  <h3>5. Obtener la contraseña inicial</h3>
+  <pre><code>sleep 30
+docker logs bloodhound-bloodhound-1 2>&1 | grep -i "initial"</code></pre>
+  <ul>
+    <li><strong>Explicación:</strong> BloodHound CE genera una contraseña aleatoria en el primer arranque. Esta contraseña solo aparece una vez en los logs — anotarla antes de continuar.</li>
+    <li><strong>Salida esperada:</strong> <code># Initial Password Set To:    a9TnkXHJyevmiGYOUSbC316VOFzjqrIx</code></li>
+  </ul>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>⚠️ Importante:</strong> Si el contenedor de BloodHound cae al hacer login, la causa más probable es falta de RAM. Apagar todas las VMs de GOAD y reiniciar Kali con al menos 8 GB asignados en VMware Settings antes de continuar.
+    <br><br>
+    Si perdiste la contraseña inicial, recrea los contenedores con: <code>docker compose down -v && docker compose up -d</code> y vuelve a leer los logs.
+  </div>
+
+  <h3>6. Primer login en BloodHound CE</h3>
+  <p>Abrir el navegador en Kali y navegar a:</p>
+  <pre><code>http://localhost:8080</code></pre>
+  <ul>
+    <li><strong>Email:</strong> <code>admin</code></li>
+    <li><strong>Password:</strong> la contraseña obtenida en el paso anterior</li>
+    <li>BloodHound pedirá cambiar la contraseña en el primer login — elegir una que sea fácil de recordar para el laboratorio.</li>
+  </ul>
+
+  <h3>7. Instalar el colector bloodhound-python</h3>
+  <pre><code>pip3 install bloodhound-ce --break-system-packages</code></pre>
+  <ul>
+    <li><strong>Explicación:</strong> Instala la versión del colector compatible con BloodHound CE v9. La versión legacy instalada con <code>apt install bloodhound</code> genera archivos incompatibles con CE v9 y no debe usarse.</li>
+    <li><strong>Verificación:</strong> Ejecutar <code>bloodhound-python --help</code> — debe mostrar <code>BloodHound.py for BloodHound Community Edition</code>.</li>
+  </ul>
+
+  <hr>
+
+  <h2>🎯 FASE 2: Recolección de Datos del Dominio</h2>
+
+  <h3>8. Configurar DNS en Kali</h3>
+  <p>Para que bloodhound-python pueda resolver los nombres de host del dominio, configurar el DNS de Kali apuntando al Domain Controller:</p>
+  <p>DNS 1: 192.168.56.10</p>
+  <p>DNS 1: 192.168.56.11</p>
+  <p>Probar la resolucion de nombres con:</p>
+  <pre><code>nslookup winterfell.north.sevenkingdoms.local
+# Debe mostrar: Address: 192.168.56.11</code></pre>
+
+  <h3>9. Recolectar datos del dominio norte</h3>
+  <pre><code>cd ~/Desktop/laboratorio
+bloodhound-python \
+  -u jon.snow \
+  -p iknownothing \
+  -d north.sevenkingdoms.local \
+  -ns 192.168.56.11 \
+  -c All \
+  --zip</code></pre>
+  <ul>
+    <li><strong>-u / -p:</strong> Credenciales de un usuario estándar del dominio — no se necesitan privilegios de administrador.</li>
+    <li><strong>-d:</strong> Nombre del dominio a recolectar.</li>
+    <li><strong>-ns:</strong> Servidor DNS — la IP del Domain Controller.</li>
+    <li><strong>-c All:</strong> Recolecta todos los tipos de datos: usuarios, grupos, equipos, GPOs, ACLs, sesiones y trusts.</li>
+    <li><strong>--zip:</strong> Empaqueta todos los archivos JSON en un único .zip para facilitar la importación.</li>
+    <li><strong>Salida esperada:</strong> <code>INFO: Done in 00M 03S — INFO: Compressing output into 20260422150106_bloodhound.zip</code></li>
+  </ul>
+
+  <h3>10. Recolectar datos del dominio raíz (opcional)</h3>
+  <pre><code>bloodhound-python \
+  -u jon.snow \
+  -p iknownothing \
+  -d sevenkingdoms.local \
+  -ns 192.168.56.10 \
+  -c All \
+  --zip</code></pre>
+  <ul>
+    <li><strong>Explicación:</strong> Recolecta datos del dominio padre. Al importar ambos ZIPs en BloodHound, el grafo mostrará rutas de ataque que cruzan la relación de confianza entre dominios.</li>
+  </ul>
+
+  <hr>
+
+  <h2>🔍 FASE 3: Análisis en BloodHound CE</h2>
+
+  <h3>11. Importar datos en BloodHound CE</h3>
+  <ol>
+    <li>Abrir <code>http://localhost:8080</code> e iniciar sesión.</li>
+    <li>Hacer clic en <strong>Quick Upload</strong> en el menú lateral izquierdo.</li>
+    <li>Arrastrar el archivo <code>.zip</code> generado o hacer clic para seleccionarlo.</li>
+    <li>Esperar que BloodHound procese los datos — verás la barra de progreso al 100%.</li>
+    <li>Cuando muestre <em>"All files have successfully been uploaded for ingest"</em>, hacer clic en <strong>Close</strong>.</li>
+    <li>Hacer clic en <strong>Explore</strong> en el menú lateral.</li>
+  </ol>
+
+  <h3>12. Buscar Domain Admins y analizar el grafo</h3>
+  <p>En el buscador <strong>Search Nodes</strong> escribir <code>Domain Admins</code> y seleccionar el resultado. En el panel derecho expandir:</p>
+  <ul>
+    <li><strong>Members:</strong> cuántas cuentas son Domain Admin.</li>
+    <li><strong>Inbound Object Control:</strong> cuántos objetos tienen control SOBRE Domain Admins — cada uno es una ruta de ataque potencial.</li>
+    <li><strong>Outbound Object Control:</strong> cuántos objetos controla Domain Admins — este número representa el radio de explosión si un atacante lo compromete.</li>
+  </ul>
+
+  <h3>13. Calcular ruta de ataque con Pathfinding</h3>
+  <p>Hacer clic en la pestaña <strong>PATHFINDING</strong> en la parte superior y configurar:</p>
+  <pre><code>Start Node: JON.SNOW@NORTH.SEVENKINGDOMS.LOCAL
+End Node:   DOMAIN ADMINS@NORTH.SEVENKINGDOMS.LOCAL</code></pre>
+  <ul>
+    <li><strong>Resultado esperado:</strong> BloodHound mostrará una ruta de 4 saltos: <code>jon.snow → AllowedToDelegate → WINTERFELL → CoerceToTGT → north.sevenkingdoms.local → Contains → USERS → Contains → DOMAIN ADMINS</code></li>
+    <li><strong>Conclusión pedagógica:</strong> Un usuario estándar sin privilegios aparentes tiene una ruta directa hacia Domain Admin explotando una delegación Kerberos mal configurada.</li>
+  </ul>
+
+  <h3>14. Consulta Cypher — encontrar cuentas Kerberoasteables</h3>
+  <p>Hacer clic en la pestaña <strong>CYPHER</strong> y ejecutar:</p>
+  <pre><code>MATCH (u:User) WHERE u.hasspn = true
+RETURN u.name, u.admincount
+ORDER BY u.admincount DESC</code></pre>
+  <ul>
+    <li><strong>Resultado esperado:</strong> Lista de cuentas con SPNs registrados — en GOAD aparecerán <code>sansa.stark</code> y <code>sql_svc</code>, ambas vulnerables a Kerberoasting.</li>
+  </ul>
+
+  <hr>
+
+  <h2>📊 Resumen de Técnicas MITRE ATT&CK</h2>
+  <ul>
+    <li><strong>T1589.001 - Credentials:</strong> Uso de credenciales de usuario estándar para recolección masiva de datos del dominio.</li>
+    <li><strong>T1482 - Domain Trust Discovery:</strong> BloodHound mapea la relación de confianza padre-hijo entre sevenkingdoms.local y north.sevenkingdoms.local.</li>
+    <li><strong>T1069.002 - Domain Groups:</strong> Enumeración de grupos privilegiados como Domain Admins y sus miembros.</li>
+    <li><strong>T1087.002 - Domain Account:</strong> Descubrimiento de todos los usuarios del dominio y sus atributos de seguridad.</li>
+    <li><strong>T1550 - Alternate Authentication:</strong> Identificación de rutas de ataque mediante delegación Kerberos (AllowedToDelegate).</li>
+  </ul>
+
+  <hr>
+
+  <h2>📂 Anexo: Comandos de Gestión de BloodHound CE</h2>
+  <p>A continuación se detallan los comandos de administración diaria de BloodHound CE organizados por función.</p>
+
+  <h3>1. Gestión de contenedores Docker</h3>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Acción</th>
+        <th>Comando</th>
+        <th>Descripción</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Iniciar</strong></td>
+        <td><code>docker compose up -d</code></td>
+        <td>Arranca los 3 contenedores en segundo plano.</td>
+      </tr>
+      <tr>
+        <td><strong>Verificar estado</strong></td>
+        <td><code>docker ps</code></td>
+        <td>Lista los contenedores activos y su estado de salud.</td>
+      </tr>
+      <tr>
+        <td><strong>Detener</strong></td>
+        <td><code>docker compose down</code></td>
+        <td>Detiene los contenedores manteniendo los datos importados.</td>
+      </tr>
+      <tr>
+        <td><strong>Ver logs</strong></td>
+        <td><code>docker logs bloodhound-bloodhound-1 -f</code></td>
+        <td>Muestra los logs en tiempo real — útil para diagnosticar problemas.</td>
+      </tr>
+      <tr>
+        <td><strong>Reiniciar contenedor</strong></td>
+        <td><code>docker restart bloodhound-bloodhound-1</code></td>
+        <td>Reinicia solo el contenedor de BloodHound sin afectar la base de datos.</td>
+      </tr>
+      <tr>
+        <td><strong>Reset completo</strong></td>
+        <td><code>docker compose down -v && docker compose up -d</code></td>
+        <td>Destruye todos los datos y genera una instalación limpia con nueva contraseña.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>2. Recolección de datos — bloodhound-python</h3>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Parámetro</th>
+        <th>Descripción</th>
+        <th>Ejemplo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>-u / -p</code></td>
+        <td>Usuario y contraseña del dominio.</td>
+        <td><code>-u jon.snow -p iknownothing</code></td>
+      </tr>
+      <tr>
+        <td><code>-d</code></td>
+        <td>Nombre del dominio a recolectar.</td>
+        <td><code>-d north.sevenkingdoms.local</code></td>
+      </tr>
+      <tr>
+        <td><code>-ns</code></td>
+        <td>Servidor de nombres — IP del Domain Controller.</td>
+        <td><code>-ns 192.168.56.11</code></td>
+      </tr>
+      <tr>
+        <td><code>-c</code></td>
+        <td>Método de recolección: All, DCOnly, Group, LocalAdmin, Session, Trusts, ACL.</td>
+        <td><code>-c All</code></td>
+      </tr>
+      <tr>
+        <td><code>--zip</code></td>
+        <td>Empaqueta la salida en un archivo .zip para importación directa.</td>
+        <td><code>--zip</code></td>
+      </tr>
+      <tr>
+        <td><code>--disable-autogc</code></td>
+        <td>Deshabilita la búsqueda automática de Global Catalog — útil si hay errores de DNS.</td>
+        <td><code>--disable-autogc</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>3. Navegación en la interfaz BloodHound CE</h3>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Panel / Función</th>
+        <th>Descripción</th>
+        <th>Uso</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Search</strong></td>
+        <td>Busca nodos por nombre en el grafo.</td>
+        <td>Escribir <code>Domain Admins</code> o <code>user:jon.snow</code></td>
+      </tr>
+      <tr>
+        <td><strong>Pathfinding</strong></td>
+        <td>Calcula la ruta más corta entre dos nodos.</td>
+        <td>Start: usuario comprometido — End: Domain Admins</td>
+      </tr>
+      <tr>
+        <td><strong>Cypher</strong></td>
+        <td>Ejecuta consultas directas sobre la base de datos de grafos Neo4j.</td>
+        <td>Consultas personalizadas para encontrar vulnerabilidades específicas</td>
+      </tr>
+      <tr>
+        <td><strong>Quick Upload</strong></td>
+        <td>Importa archivos .zip o .json generados por bloodhound-python.</td>
+        <td>Los datos se acumulan — subir varios ZIPs enriquece el grafo</td>
+      </tr>
+      <tr>
+        <td><strong>Privilege Zones</strong></td>
+        <td>Muestra los objetos clasificados por nivel de privilegio (Tier Zero).</td>
+        <td>Identifica los activos más críticos del dominio</td>
+      </tr>
+      <tr>
+        <td><strong>Inbound Object Control</strong></td>
+        <td>Objetos que tienen control SOBRE el nodo seleccionado.</td>
+        <td>Rutas de ataque que llegan al objeto</td>
+      </tr>
+      <tr>
+        <td><strong>Outbound Object Control</strong></td>
+        <td>Objetos sobre los que el nodo seleccionado tiene control.</td>
+        <td>Radio de explosión si el objeto es comprometido</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>💡 Lecciones Aprendidas</h2>
+  <ul>
+    <li><strong>Una cuenta estándar es suficiente:</strong> bloodhound-python solo necesita una cuenta de usuario normal para mapear completamente toda la infraestructura de identidad del dominio — no requiere privilegios de administrador.</li>
+    <li><strong>Los permisos acumulados son el problema real:</strong> Las configuraciones inseguras no son visibles revisando permisos uno por uno — BloodHound los encadena y muestra la ruta completa automáticamente.</li>
+    <li><strong>La dirección de las flechas importa:</strong> En el grafo, la dirección de cada arista define quién controla a quién. Confundirla lleva a conclusiones incorrectas sobre las rutas de ataque.</li>
+    <li><strong>El radio de explosión es el indicador defensivo clave:</strong> El Outbound Object Control de Domain Admins equivale a todos los objetos del dominio — en producción pueden ser miles, lo que explica por qué comprometer DA es catastrófico.</li>
+    <li><strong>Los datos se acumulan:</strong> Cada Quick Upload agrega información al grafo sin borrar la anterior — importar ambos dominios juntos revela rutas cross-domain que no serían visibles con un solo dominio.</li>
+  </ul>
+
+  <hr>
+
+  <h2>📚 Referencias</h2>
+  <ul>
+    <li>BloodHound CE — Repositorio oficial: <a href="https://github.com/SpecterOps/BloodHound" target="_blank">https://github.com/SpecterOps/BloodHound</a></li>
+    <li>GOAD (Game of Active Directory): <a href="https://github.com/Orange-Cyberdefense/GOAD" target="_blank">https://github.com/Orange-Cyberdefense/GOAD</a></li>
+    <li>MITRE ATT&CK Matrix: <a href="https://attack.mitre.org/" target="_blank">https://attack.mitre.org/</a></li>
+    <li>BloodHound Documentation: <a href="https://bloodhound.specterops.io/home" target="_blank">https://bloodhound.specterops.io/home</a></li>
+    <li>Impacket — Herramientas para protocolos Windows: <a href="https://github.com/fortra/impacket" target="_blank">https://github.com/fortra/impacket</a></li>
+  </ul>
+
+  <section>
+    <h2>Ejercicios de Control</h2>
+    <div class="iframe-wrapper">
+      <iframe src="https://app.lumi.education/api/v1/run/TU_CODIGO_AQUI/embed" width="1088" height="400" frameborder="0" allowfullscreen="allowfullscreen"></iframe>
+    </div>
+  </section>
+
+  <form id="form-reportar" class="form-horizontal">
+    <input type="hidden" id="titulo" name="titulo" value="BloodHound CE — Reconocimiento de Active Directory">
+    <input type="hidden" id="archivo" name="archivo" value="guia_bloodhound_ce.html">
+    <input type="hidden" id="fecha" name="fecha">
+    <textarea id="comentario" name="comentario" placeholder="¿Tuviste problemas con la instalación de Docker, el login en BloodHound o la recolección de datos? Escribí aquí." required></textarea>
+    <button type="submit">Enviar Reporte</button>
+  </form>
+
+  <div id="mensaje-envio" style="margin-top:10px; color: green;"></div>
+
+</main>
+<div data-include="footer"></div>
+<script src="assets/js/scripts.js"></script>
+</body>
+</html>
