@@ -383,46 +383,18 @@ ping -c2 192.168.56.11   # dc02 — WINTERFELL
 ping -c2 192.168.56.22   # srv02 — CASTELBLACK</code></pre>
   <p>Los tres pings deben responder con tiempo de respuesta bajo. Si alguno falla, verificar que la VM esté encendida y que el Adapter 1 esté asignado a VMnet5.</p>
 
-  <h3>2.7 Configurar DNS en Kali y verificar resolución de nombres</h3>
-  <p>
-    Para que Kali pueda resolver los nombres de host del dominio Active Directory (como <code>winterfell.north.sevenkingdoms.local</code>), es necesario apuntar el DNS al Domain Controller. Sin esta configuración, herramientas como bloodhound-python no podrán conectarse correctamente al dominio aunque el ping funcione.
-  </p>
-  <pre><code>sudo nano /etc/resolv.conf</code></pre>
-  <p>Agregar estas dos líneas al <strong>inicio</strong> del archivo, antes de cualquier otro nameserver existente, y guardar con <strong>Ctrl+O → Enter → Ctrl+X</strong>:</p>
-  <pre><code>nameserver 192.168.56.11
-nameserver 192.168.56.10</code></pre>
-
-  <p>Una vez guardado, verificar que el DNS resuelve correctamente:</p>
-  <pre><code>nslookup winterfell.north.sevenkingdoms.local</code></pre>
-
-  <p><strong>Resultado esperado si el DNS funciona correctamente:</strong></p>
-  <pre><code>Server:         192.168.56.11
-Address:        192.168.56.11#53
-
-Name:   winterfell.north.sevenkingdoms.local
-Address: 192.168.56.11</code></pre>
-
-  <p><strong>Resultado si el DNS NO resuelve correctamente:</strong></p>
-  <pre><code>;; connection timed out; no servers could be reached
-
-# o bien:
-Server:         192.168.56.11
-** server cannot find winterfell.north.sevenkingdoms.local: NXDOMAIN</code></pre>
-
-  <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
-    <strong>Si el DNS no resuelve — verificar lo siguiente en orden:</strong>
-    <ul style="margin-top: 10px; margin-bottom: 0;">
-      <li><strong>Connection timed out:</strong> dc02 no está respondiendo. Verificar que la VM está encendida y que <code>ping 192.168.56.11</code> responde. Si no responde, revisar que el Adapter 1 de dc02 esté asignado a VMnet5.</li>
-      <li><strong>NXDOMAIN:</strong> dc02 responde pero no reconoce el dominio. Verificar que <code>/etc/resolv.conf</code> tiene <code>nameserver 192.168.56.11</code> en la primera línea, sin otros nameservers antes.</li>
-      <li><strong>Los cambios se pierden al reiniciar:</strong> NetworkManager puede regenerar <code>/etc/resolv.conf</code> automáticamente. Configurar el DNS en la interfaz gráfica: ícono de red → <strong>Edit Connections → VMnet5 → IPv4 → DNS servers</strong> → ingresar <code>192.168.56.11, 192.168.56.10</code> → guardar y reconectar.</li>
-    </ul>
-  </div>
-
+  
   <hr>
 
   <h2>🔧 FASE 3: Instalación de BloodHound CE en Kali Linux</h2>
 
   <h3>3.1 Componentes de BloodHound CE — ¿qué vamos a instalar?</h3>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Importante:</strong> Antes de instalar, debemos cambiar la conexion del adaptador de red virtual del Kali a NAT (VM | Setting | Network Adapter | NAT) guardar, desconectar por 10 segundos y volver a conectar)
+  </div>
+
+
   <p>BloodHound CE es una aplicación de múltiples componentes. Antes de instalar es importante entender qué hace cada pieza:</p>
 
   <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
@@ -468,6 +440,7 @@ Server:         192.168.56.11
   </table>
 
   <h3>3.2 Verificar e instalar Git</h3>
+    <h3>Antes de instalar, debemos cambiar adaptador de red virtual a NAT (VM|Setting|Network Adaptar|NAT)</h3>
   <p>
     <strong>Git</strong> es un sistema de control de versiones que permite descargar repositorios completos desde plataformas como GitHub. Se usa para obtener el repositorio oficial de BloodHound CE con todos sus archivos de configuración. Kali Linux lo incluye por defecto, pero es buena práctica verificarlo antes de continuar:
   </p>
@@ -549,15 +522,44 @@ docker logs bloodhound-bloodhound-1 2>&1 | grep -i "initial"</code></pre>
 
   <h2>🎯 FASE 4: Recolección de Datos del Dominio</h2>
 
-  <h3>4.1 Configurar DNS en Kali</h3>
-  <p>bloodhound-python necesita resolver los nombres de host del dominio AD. Configurar el DNS de Kali apuntando a los Domain Controllers:</p>
+
+
+
+<h3>Configurar DNS en Kali y verificar resolución de nombres</h3>
+  <p>
+    Para que Kali pueda resolver los nombres de host del dominio Active Directory (como <code>winterfell.north.sevenkingdoms.local</code>), es necesario apuntar el DNS al Domain Controller. Sin esta configuración, herramientas como bloodhound-python no podrán conectarse correctamente al dominio aunque el ping funcione.
+  </p>
   <pre><code>sudo nano /etc/resolv.conf</code></pre>
-  <p>Agregar al inicio y guardar con <strong>Ctrl+O → Enter → Ctrl+X</strong>:</p>
+  <p>Agregar estas dos líneas al <strong>inicio</strong> del archivo, antes de cualquier otro nameserver existente, y guardar con <strong>Ctrl+O → Enter → Ctrl+X</strong>:</p>
   <pre><code>nameserver 192.168.56.11
 nameserver 192.168.56.10</code></pre>
-  <p>Verificar resolución de nombres:</p>
-  <pre><code>nslookup winterfell.north.sevenkingdoms.local
-# Resultado esperado → Address: 192.168.56.11</code></pre>
+
+  <p>Una vez guardado, verificar que el DNS resuelve correctamente:</p>
+  <pre><code>nslookup winterfell.north.sevenkingdoms.local</code></pre>
+
+  <p><strong>Resultado esperado si el DNS funciona correctamente:</strong></p>
+  <pre><code>Server:         192.168.56.11
+Address:        192.168.56.11#53
+
+Name:   winterfell.north.sevenkingdoms.local
+Address: 192.168.56.11</code></pre>
+
+  <p><strong>Resultado si el DNS NO resuelve correctamente:</strong></p>
+  <pre><code>;; connection timed out; no servers could be reached
+
+# o bien:
+Server:         192.168.56.11
+** server cannot find winterfell.north.sevenkingdoms.local: NXDOMAIN</code></pre>
+
+  <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
+    <strong>Si el DNS no resuelve — verificar lo siguiente en orden:</strong>
+    <ul style="margin-top: 10px; margin-bottom: 0;">
+      <li><strong>Connection timed out:</strong> dc02 no está respondiendo. Verificar que la VM está encendida y que <code>ping 192.168.56.11</code> responde. Si no responde, revisar que el Adapter 1 de dc02 esté asignado a VMnet5.</li>
+      <li><strong>NXDOMAIN:</strong> dc02 responde pero no reconoce el dominio. Verificar que <code>/etc/resolv.conf</code> tiene <code>nameserver 192.168.56.11</code> en la primera línea, sin otros nameservers antes.</li>
+      <li><strong>Los cambios se pierden al reiniciar:</strong> NetworkManager puede regenerar <code>/etc/resolv.conf</code> automáticamente. Configurar el DNS en la interfaz gráfica: ícono de red → <strong>Edit Connections → VMnet5 → IPv4 → DNS servers</strong> → ingresar <code>192.168.56.11, 192.168.56.10</code> → guardar y reconectar.</li>
+    </ul>
+  </div>
+
 
   <h3>4.2 Recolectar datos del dominio norte</h3>
   <pre><code>cd ~/Desktop/laboratorio
