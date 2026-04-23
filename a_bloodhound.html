@@ -83,21 +83,21 @@
         <td><strong>dc01</strong></td>
         <td>KINGSLANDING</td>
         <td>sevenkingdoms.local</td>
-        <td><code>192.168.56.10</code> (estática - VMnet5)</td>
+        <td><code>192.168.56.10</code> (estática)</td>
         <td>Domain Controller — dominio raíz del bosque</td>
       </tr>
       <tr>
         <td><strong>dc02</strong></td>
         <td>WINTERFELL</td>
         <td>north.sevenkingdoms.local</td>
-        <td><code>192.168.56.11</code> (estática - VMnet5)</td>
+        <td><code>192.168.56.11</code> (estática)</td>
         <td>Domain Controller — dominio hijo</td>
       </tr>
       <tr>
         <td><strong>srv02</strong></td>
         <td>CASTELBLACK</td>
         <td>north.sevenkingdoms.local</td>
-        <td><code>192.168.56.22</code> (estática  - VMnet5)</td>
+        <td><code>192.168.56.22</code> (estática)</td>
         <td>Servidor miembro — SQL Server Express</td>
       </tr>
       <tr>
@@ -121,7 +121,7 @@
     <strong>GOAD (Game of Active Directory)</strong> es un laboratorio de seguridad de código abierto creado por Orange Cyberdefense. Despliega un entorno Active Directory completamente funcional con vulnerabilidades preconfiguradas intencionalmente, diseñado para practicar técnicas de ataque y defensa sin afectar sistemas reales.
   </p>
   <p>
-    A diferencia de otros laboratorios que simulan vulnerabilidades individuales, GOAD replica el comportamiento de una red corporativa real — con múltiples dominios, relaciones de confianza, cuentas de servicio y permisos mal configurados acumulados con el tiempo. Los servidores y usuarios están nombrados con personajes de la serie <em>Game of Thrones.</em>
+    A diferencia de otros laboratorios que simulan vulnerabilidades individuales, GOAD replica el comportamiento de una red corporativa real — con múltiples dominios, relaciones de confianza, cuentas de servicio y permisos mal configurados acumulados con el tiempo. Los servidores y usuarios están nombrados con personajes de <em>Game of Thrones</em> para hacerlo memorable.
   </p>
 
   <h3>1.2 Descripción de cada VM y su rol</h3>
@@ -368,10 +368,8 @@
     </tbody>
   </table>
 
-
-
   <h3>2.6 Encender las VMs y verificar conectividad</h3>
-  <p>Encender siempre en este orden, esperar a que una VM inicie toda para encender la siguiente — el dominio necesita que los DCs estén disponibles antes de que los servidores miembro intenten unirse:</p>
+  <p>Encender siempre en este orden, esperar a que cada VM inicie completamente antes de encender la siguiente — el dominio necesita que los DCs estén disponibles antes de que los servidores miembro intenten unirse:</p>
   <ol>
     <li>Encender <strong>dc01</strong> → esperar hasta ver la pantalla de login (~2 minutos).</li>
     <li>Encender <strong>dc02</strong> → esperar hasta ver la pantalla de login.</li>
@@ -385,11 +383,7 @@ ping -c2 192.168.56.11   # dc02 — WINTERFELL
 ping -c2 192.168.56.22   # srv02 — CASTELBLACK</code></pre>
   <p>Los tres pings deben responder con tiempo de respuesta bajo. Si alguno falla, verificar que la VM esté encendida y que el Adapter 1 esté asignado a VMnet5.</p>
 
-
-
-  <hr>
-
-   <h3>2.7 Configurar DNS en Kali y verificar resolución de nombres</h3>
+  <h3>2.7 Configurar DNS en Kali y verificar resolución de nombres</h3>
   <p>
     Para que Kali pueda resolver los nombres de host del dominio Active Directory (como <code>winterfell.north.sevenkingdoms.local</code>), es necesario apuntar el DNS al Domain Controller. Sin esta configuración, herramientas como bloodhound-python no podrán conectarse correctamente al dominio aunque el ping funcione.
   </p>
@@ -424,7 +418,7 @@ Server:         192.168.56.11
     </ul>
   </div>
 
-
+  <hr>
 
   <h2>🔧 FASE 3: Instalación de BloodHound CE en Kali Linux</h2>
 
@@ -440,6 +434,11 @@ Server:         192.168.56.11
       </tr>
     </thead>
     <tbody>
+      <tr>
+        <td><strong>Git</strong></td>
+        <td>Sistema de control de versiones distribuido. Kali lo incluye por defecto.</td>
+        <td>Se usa para clonar el repositorio oficial de BloodHound CE desde GitHub y obtener todos los archivos de configuración necesarios.</td>
+      </tr>
       <tr>
         <td><strong>Docker</strong></td>
         <td>Plataforma de contenedores que empaqueta aplicaciones con todas sus dependencias.</td>
@@ -468,7 +467,16 @@ Server:         192.168.56.11
     </tbody>
   </table>
 
-  <h3>3.2 Instalar Docker</h3>
+  <h3>3.2 Verificar e instalar Git</h3>
+  <p>
+    <strong>Git</strong> es un sistema de control de versiones que permite descargar repositorios completos desde plataformas como GitHub. Se usa para obtener el repositorio oficial de BloodHound CE con todos sus archivos de configuración. Kali Linux lo incluye por defecto, pero es buena práctica verificarlo antes de continuar:
+  </p>
+  <pre><code>git --version
+# Resultado esperado: git version 2.x.x</code></pre>
+  <p>Si por algún motivo no está instalado, ejecutar:</p>
+  <pre><code>sudo apt update && sudo apt install -y git</code></pre>
+
+  <h3>3.3 Instalar Docker</h3>
   <pre><code>sudo apt update
 sudo apt install -y docker.io docker-compose
 sudo systemctl start docker
@@ -482,19 +490,19 @@ newgrp docker</code></pre>
     <li><strong>Verificación:</strong> ejecutar <code>docker --version</code> — debe mostrar Docker version 24.x o superior.</li>
   </ul>
 
-  <h3>3.3 Descargar BloodHound CE</h3>
+  <h3>3.4 Descargar BloodHound CE</h3>
   <pre><code>mkdir -p ~/Desktop/laboratorio
 cd ~/Desktop/laboratorio
 git clone https://github.com/SpecterOps/BloodHound.git bloodhound
 cd bloodhound</code></pre>
 
-  <h3>3.4 Configurar BloodHound CE</h3>
+  <h3>3.5 Configurar BloodHound CE</h3>
   <pre><code>cp examples/docker-compose/docker-compose.yml docker-compose.yml</code></pre>
   <ul>
     <li>Copia el archivo de configuración de ejemplo que define los tres contenedores con sus parámetros de red, puertos y variables de entorno.</li>
   </ul>
 
-  <h3>3.5 Iniciar BloodHound CE</h3>
+  <h3>3.6 Iniciar BloodHound CE</h3>
   <pre><code>docker compose up -d</code></pre>
   <ul>
     <li>Inicia los tres contenedores en segundo plano. La primera vez descarga las imágenes Docker (~2 GB) — puede tardar entre 5 y 10 minutos.</li>
@@ -507,7 +515,7 @@ cd bloodhound</code></pre>
     </li>
   </ul>
 
-  <h3>3.6 Obtener la contraseña inicial</h3>
+  <h3>3.7 Obtener la contraseña inicial</h3>
   <pre><code>sleep 30
 docker logs bloodhound-bloodhound-1 2>&1 | grep -i "initial"</code></pre>
   <ul>
@@ -521,7 +529,7 @@ docker logs bloodhound-bloodhound-1 2>&1 | grep -i "initial"</code></pre>
     Si perdiste la contraseña inicial: <code>docker compose down -v &amp;&amp; docker compose up -d</code> — luego volver a leer los logs.
   </div>
 
-  <h3>3.7 Primer login en BloodHound CE</h3>
+  <h3>3.8 Primer login en BloodHound CE</h3>
   <p>Abrir el navegador en Kali y navegar a:</p>
   <pre><code>http://localhost:8080</code></pre>
   <ul>
@@ -530,7 +538,7 @@ docker logs bloodhound-bloodhound-1 2>&1 | grep -i "initial"</code></pre>
     <li>BloodHound pedirá cambiar la contraseña en el primer login.</li>
   </ul>
 
-  <h3>3.8 Instalar el colector bloodhound-python</h3>
+  <h3>3.9 Instalar el colector bloodhound-python</h3>
   <pre><code>pip3 install bloodhound-ce --break-system-packages</code></pre>
   <ul>
     <li>Instala la versión del colector compatible con BloodHound CE v9. La versión legacy (<code>apt install bloodhound</code>) genera archivos incompatibles con CE v9.</li>
