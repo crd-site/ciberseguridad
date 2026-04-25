@@ -534,6 +534,11 @@ Server:         192.168.56.11
   <h2>🚀 FASE 4: Iniciar BloodHound CE y Primer Login</h2>
 
   <h3>4.1 Iniciar BloodHound CE</h3>
+  <h6>Agregar el usuario al grupo docker para no necesitar sudo:</h6>
+  <pre><code>sudo usermod -aG docker $USER
+newgrp docker</code></pre>
+
+
   <pre><code>cd ~/Desktop/laboratorio/bloodhound
 docker compose up -d</code></pre>
   <ul>
