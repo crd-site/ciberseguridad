@@ -534,11 +534,15 @@ Server:         192.168.56.11
   <h2>🚀 FASE 4: Iniciar BloodHound CE y Primer Login</h2>
 
   <h3>4.1 Iniciar BloodHound CE</h3>
-  <h6>Agregar el usuario al grupo docker para no necesitar sudo:</h6>
+  <h4>Agregar el usuario al grupo docker para no necesitar sudo:</h4>
+  <br>
   <pre><code>sudo usermod -aG docker $USER
 newgrp docker</code></pre>
+<br>
+    <h3>Por ser la primera vez kali necesita conexion a internet, por que es necesario agregar una nueva targeta de red virtual tipo NAT</h4>
 
-
+<pre><code>VM |Setting | Add Network Adapter | Tipo Custom: NAT y probar ping 8.8.8.8 </code></pre>
+<br>
   <pre><code>cd ~/Desktop/laboratorio/bloodhound
 docker compose up -d</code></pre>
   <ul>
@@ -553,6 +557,10 @@ docker compose up -d</code></pre>
   </ul>
 
   <h3>4.2 Obtener la contraseña inicial</h3>
+  <h4>Esta parte hay que esperar hasta que veren el monitor de procesos de kali termine, el tiempo que tarda varia de acuerdo a cada maquina</h4>
+  <br>
+  <h4>Es comveniente esperar a que el monitor de procesos de kali se normalice</h4>
+  <br>
   <pre><code>sleep 30
 docker logs bloodhound-bloodhound-1 2>&1 | grep -i "initial"</code></pre>
   <ul>
