@@ -110,8 +110,7 @@
     </tbody>
   </table>
 
-  <p><strong>Arquitectura de red:</strong> Cada servidor Windows tiene dos tarjetas de red. La primera conectada a <strong>VMnet5 (Host-only)</strong> con IP estática — es la red del laboratorio donde ocurren todos los ataques. La segunda conectada a <strong>NAT</strong> — solo para acceso a internet durante actualizaciones, no se usa en ningún ataque.</p>
-
+  <p><strong>Arquitectura de red:</strong> Cada servidor Windows tiene dos tarjetas de red. La primera conectada a <strong>NAT</strong> — solo para acceso a internet durante actualizaciones, no se usa en ningún ataque. La segunda <strong>VMnet5 (Host-only)</strong> con IP estática — es la red del laboratorio donde ocurren todos los ataques. </p>
   <hr>
 
   <h2>📖 Conceptos del Entorno GOAD</h2>
@@ -605,8 +604,8 @@ bloodhound-python \
 
   <h3>5.2 Recolectar datos del dominio raíz</h3>
   <pre><code>bloodhound-python \
-  -u jon.snow \
-  -p iknownothing \
+  -u petyer.baelish \
+  -p @littlefinger@ \
   -d sevenkingdoms.local \
   -ns 192.168.56.10 \
   -c All \
