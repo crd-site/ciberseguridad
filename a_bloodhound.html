@@ -213,65 +213,210 @@
   <h3>Credenciales de acceso a las VMs</h3>
 
   <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-    <thead>
-      <tr style="background-color: #2e2323;">
-        <th>VM / Cuenta</th>
-        <th>Usuario</th>
-        <th>Contraseña</th>
-        <th>Tipo</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>dc01</strong></td>
-        <td>vagrant</td>
-        <td>vagrant</td>
-        <td>Administrador local</td>
-      </tr>
-      <tr>
-        <td><strong>dc01</strong></td>
-        <td>administrator</td>
-        <td>8dCT-DJjgScp</td>
-        <td>Administrador local</td>
-      </tr>
-      <tr>
-        <td><strong>dc02</strong></td>
-        <td>vagrant</td>
-        <td>vagrant</td>
-        <td>Administrador local</td>
-      </tr>
-      <tr>
-        <td><strong>dc02</strong></td>
-        <td>administrator</td>
-        <td>NgtI75cKV+Pu</td>
-        <td>Administrador local</td>
-      </tr>
-      <tr>
-        <td><strong>srv02</strong></td>
-        <td>vagrant</td>
-        <td>vagrant</td>
-        <td>Administrador local</td>
-      </tr>
-      <tr>
-        <td><strong>Dominio norte</strong></td>
-        <td>jon.snow</td>
-        <td>iknownothing</td>
-        <td>Usuario de dominio estándar</td>
-      </tr>
-      <tr>
-        <td><strong>Dominio norte</strong></td>
-        <td>sql_svc</td>
-        <td>YouShallNotPass!</td>
-        <td>Cuenta de servicio SQL</td>
-      </tr>
-      <tr>
-        <td><strong>SQL Server</strong></td>
-        <td>sa</td>
-        <td>Sup1_sa_P@ssw0rd!</td>
-        <td>Administrador SQL</td>
-      </tr>
-    </tbody>
-  </table>
+  <thead>
+    <tr style="background-color: #2e2323;">
+      <th>VM / Cuenta</th>
+      <th>Usuario</th>
+      <th>Contraseña</th>
+      <th>Tipo / Privilegio</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <tr style="background-color: #1a1a1a;">
+      <td colspan="4" style="color: #E24B4A; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 6px;">dc01 — KINGSLANDING / sevenkingdoms.local</td>
+    </tr>
+    <tr>
+      <td><strong>dc01</strong></td>
+      <td>vagrant</td>
+      <td>vagrant</td>
+      <td>Administrador local de la VM</td>
+    </tr>
+    <tr>
+      <td><strong>dc01</strong></td>
+      <td>administrator</td>
+      <td>8dCT-DJjgScp</td>
+      <td>Administrador local — Domain Admin</td>
+    </tr>
+    <tr style="background-color: #1a1a1a;">
+      <td colspan="4" style="color: #888; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 6px;">Usuarios de dominio — sevenkingdoms.local</td>
+    </tr>
+    <tr>
+      <td><strong>sevenkingdoms</strong></td>
+      <td>cersei.lannister</td>
+      <td>il0vejaime</td>
+      <td>Domain Admin — Lannister, Baratheon, Small Council</td>
+    </tr>
+    <tr>
+      <td><strong>sevenkingdoms</strong></td>
+      <td>robert.baratheon</td>
+      <td>iamthekingoftheworld</td>
+      <td>Domain Admin — Protected Users (sin delegación Kerberos)</td>
+    </tr>
+    <tr>
+      <td><strong>sevenkingdoms</strong></td>
+      <td>tywin.lannister</td>
+      <td>powerkingftw135</td>
+      <td>Privilegiado — ForceChangePassword sobre jaime</td>
+    </tr>
+    <tr>
+      <td><strong>sevenkingdoms</strong></td>
+      <td>jaime.lannister</td>
+      <td>cersei</td>
+      <td>Privilegiado — GenericWrite sobre joffrey</td>
+    </tr>
+    <tr>
+      <td><strong>sevenkingdoms</strong></td>
+      <td>joffrey.baratheon</td>
+      <td>1killerlion</td>
+      <td>Privilegiado — WriteDacl sobre tyron</td>
+    </tr>
+    <tr>
+      <td><strong>sevenkingdoms</strong></td>
+      <td>tyron.lannister</td>
+      <td>Alc00L&amp;S3x</td>
+      <td>Privilegiado — puede agregarse a Small Council</td>
+    </tr>
+    <tr>
+      <td><strong>sevenkingdoms</strong></td>
+      <td>stannis.baratheon</td>
+      <td>Drag0nst0ne</td>
+      <td>Privilegiado — GenericAll sobre kingslanding$</td>
+    </tr>
+    <tr>
+      <td><strong>sevenkingdoms</strong></td>
+      <td>renly.baratheon</td>
+      <td>lorastyrell</td>
+      <td>Privilegiado — WriteDacl sobre OU Crownlands</td>
+    </tr>
+    <tr>
+      <td><strong>sevenkingdoms</strong></td>
+      <td>lord.varys</td>
+      <td>_W1sper_$</td>
+      <td>Privilegiado — GenericAll sobre Domain Admins</td>
+    </tr>
+    <tr>
+      <td><strong>sevenkingdoms</strong></td>
+      <td>petyer.baelish</td>
+      <td>@littlefinger@</td>
+      <td>Estándar — Small Council</td>
+    </tr>
+    <tr>
+      <td><strong>sevenkingdoms</strong></td>
+      <td>maester.pycelle</td>
+      <td>MaesterOfMaesters</td>
+      <td>Estándar — Small Council</td>
+    </tr>
+
+    <tr style="background-color: #1a1a1a;">
+      <td colspan="4" style="color: #E24B4A; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 6px;">dc02 — WINTERFELL / north.sevenkingdoms.local</td>
+    </tr>
+    <tr>
+      <td><strong>dc02</strong></td>
+      <td>vagrant</td>
+      <td>vagrant</td>
+      <td>Administrador local de la VM</td>
+    </tr>
+    <tr>
+      <td><strong>dc02</strong></td>
+      <td>administrator</td>
+      <td>NgtI75cKV+Pu</td>
+      <td>Administrador local — Domain Admin</td>
+    </tr>
+    <tr style="background-color: #1a1a1a;">
+      <td colspan="4" style="color: #888; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 6px;">Usuarios de dominio — north.sevenkingdoms.local</td>
+    </tr>
+    <tr>
+      <td><strong>north</strong></td>
+      <td>eddard.stark</td>
+      <td>FightP3aceAndHonor!</td>
+      <td>Domain Admin — Stark</td>
+    </tr>
+    <tr>
+      <td><strong>north</strong></td>
+      <td>catelyn.stark</td>
+      <td>robbsansabradonaryarickon</td>
+      <td>Privilegiado — ACLs especiales sobre objetos del dominio</td>
+    </tr>
+    <tr>
+      <td><strong>north</strong></td>
+      <td>robb.stark</td>
+      <td>sexywolfy</td>
+      <td>Privilegiado — credenciales en Credential Manager</td>
+    </tr>
+    <tr>
+      <td><strong>north</strong></td>
+      <td>jon.snow</td>
+      <td>iknownothing</td>
+      <td>Estándar — SPN, AllowedToDelegate, sysadmin SQL — punto de entrada</td>
+    </tr>
+    <tr>
+      <td><strong>north</strong></td>
+      <td>sansa.stark</td>
+      <td>345ertdfg</td>
+      <td>Estándar — SPN registrado, Kerberoasteable</td>
+    </tr>
+    <tr>
+      <td><strong>north</strong></td>
+      <td>arya.stark</td>
+      <td>Needle</td>
+      <td>Estándar — impersonación dbo en SQL (master y msdb)</td>
+    </tr>
+    <tr>
+      <td><strong>north</strong></td>
+      <td>brandon.stark</td>
+      <td>iseedeadpeople</td>
+      <td>Estándar — puede impersonar jon.snow en SQL</td>
+    </tr>
+    <tr>
+      <td><strong>north</strong></td>
+      <td>rickon.stark</td>
+      <td>Winter2022</td>
+      <td>Estándar — sin privilegios especiales</td>
+    </tr>
+    <tr>
+      <td><strong>north</strong></td>
+      <td>hodor</td>
+      <td>hodor</td>
+      <td>Estándar — contraseña extremadamente débil</td>
+    </tr>
+    <tr>
+      <td><strong>north</strong></td>
+      <td>samwell.tarly</td>
+      <td>Heartsbane</td>
+      <td>Estándar — puede impersonar sa en SQL</td>
+    </tr>
+    <tr>
+      <td><strong>north</strong></td>
+      <td>jeor.mormont</td>
+      <td>_L0ngCl@w_</td>
+      <td>Administrador local de srv02 — Night Watch, Mormont</td>
+    </tr>
+    <tr>
+      <td><strong>north</strong></td>
+      <td>sql_svc</td>
+      <td>YouWillNotKerboroast1ngMeeeeee</td>
+      <td>Cuenta de servicio — SPN MSSQLSvc, Kerberoasteable</td>
+    </tr>
+
+    <tr style="background-color: #1a1a1a;">
+      <td colspan="4" style="color: #E24B4A; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 6px;">srv02 — CASTELBLACK / north.sevenkingdoms.local</td>
+    </tr>
+    <tr>
+      <td><strong>srv02</strong></td>
+      <td>vagrant</td>
+      <td>vagrant</td>
+      <td>Administrador local de la VM</td>
+    </tr>
+    <tr>
+      <td><strong>SQL Server</strong></td>
+      <td>sa</td>
+      <td>Sup1_sa_P@ssw0rd!</td>
+      <td>Administrador total de SQL Server</td>
+    </tr>
+
+  </tbody>
+</table>
 
   <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
     <strong>⚠️ Aviso de seguridad:</strong> Estas credenciales son de uso exclusivo en el laboratorio GOAD. Las VMs deben correr en la red VMnet5 aislada y nunca estar expuestas a internet ni a redes de producción. Las contraseñas débiles son intencionales para los ejercicios.
