@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#040d1a;color:#c0d8f0;padding:10px}
+.title{font-size:9px;color:#2a6a8a;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #0d2a40}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.card{background:#030c1c;border:1px solid #0c2235;border-radius:8px;padding:10px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:8px 8px 0 0}
+.cn::before{background:#00ff88}
+.ca::before{background:#ffaa00}
+.cc::before{background:#ff2222}
+.hdr{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.ico{font-size:14px}
+.badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:1px}
+.bok{background:rgba(0,255,136,.15);color:#00ff88;border:1px solid rgba(0,255,136,.3)}
+.bwn{background:rgba(255,170,0,.15);color:#ffaa00;border:1px solid rgba(255,170,0,.3)}
+.bct{background:rgba(255,34,34,.15);color:#ff4444;border:1px solid rgba(255,34,34,.3)}
+.eq{margin-bottom:8px}
+.er{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:11px;color:#4a8aaa;border-bottom:1px solid #0a1e30}
+.er:last-child{border-bottom:none}
+.pill{font-size:9px;font-weight:700;padding:1px 7px;border-radius:20px}
+.pon{background:rgba(0,255,136,.15);color:#00ff88}
+.pof{background:rgba(255,51,51,.15);color:#ff4444}
+.rt{font-size:8px;color:#2a6a8a;letter-spacing:2px;margin-bottom:4px}
+.ri{font-size:10px;padding:1px 0}
+.rok{color:#00ff88}.rwn{color:#ffaa00}.rct{color:#ff4444}
+</style>
+</head>
+<body>
+<div class="title">Estados de operación</div>
+<div class="grid">
+  <div class="card cn">
+    <div class="hdr"><span class="ico">✅</span><span class="badge bok">NORMAL</span></div>
+    <div class="eq">
+      <div class="er"><span>Bomba</span><span class="pill pon">ON</span></div>
+      <div class="er"><span>Ventilador</span><span class="pill pon">ON</span></div>
+    </div>
+    <div class="rt">RESULTADO</div>
+    <div class="ri rok">↓ Temperatura baja</div>
+    <div class="ri rok">↑ Nivel sube</div>
+    <div class="ri rok">✓ Sin alarmas</div>
+  </div>
+  <div class="card ca">
+    <div class="hdr"><span class="ico">⚠️</span><span class="badge bwn">ALERTA</span></div>
+    <div class="eq">
+      <div class="er"><span>Bomba</span><span class="pill pon">ON</span></div>
+      <div class="er"><span>Ventilador</span><span class="pill pof">OFF</span></div>
+    </div>
+    <div class="rt">RESULTADO</div>
+    <div class="ri rwn">↑ Temp +3°C por ciclo</div>
+    <div class="ri rok">↑ Nivel sube</div>
+    <div class="ri rwn">⚠ Alarma a 60°C</div>
+  </div>
+  <div class="card ca">
+    <div class="hdr"><span class="ico">⚠️</span><span class="badge bwn">ALERTA</span></div>
+    <div class="eq">
+      <div class="er"><span>Bomba</span><span class="pill pof">OFF</span></div>
+      <div class="er"><span>Ventilador</span><span class="pill pon">ON</span></div>
+    </div>
+    <div class="rt">RESULTADO</div>
+    <div class="ri rwn">↑ Temp +1°C por ciclo</div>
+    <div class="ri rct">↓ Nivel baja</div>
+    <div class="ri rwn">⚠ Alarma a 60°C</div>
+  </div>
+  <div class="card cc">
+    <div class="hdr"><span class="ico">🔴</span><span class="badge bct">CRÍTICO</span></div>
+    <div class="eq">
+      <div class="er"><span>Bomba</span><span class="pill pof">OFF</span></div>
+      <div class="er"><span>Ventilador</span><span class="pill pof">OFF</span></div>
+    </div>
+    <div class="rt">RESULTADO</div>
+    <div class="ri rct">↑ Temp +5°C por ciclo</div>
+    <div class="ri rct">↓ Nivel baja rápido</div>
+    <div class="ri rct">💥 Explosión a 85°C</div>
+  </div>
+</div>
+</body>
+</html>
