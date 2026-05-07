@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía de Operación — Planta Tratamiento Agua</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #040d1a;
+    color: #c0d8f0;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* HEADER */
+  .header {
+    background: #020810;
+    border-bottom: 2px solid #0d3a5c;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon {
+    width: 44px; height: 44px;
+    background: #0d2a40;
+    border: 1px solid #1a5a8c;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .header-title { font-size: 18px; font-weight: 700; color: #00ccff; letter-spacing: 1px; }
+  .header-sub { font-size: 11px; color: #2a6a8a; letter-spacing: 2px; margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 20px; font-size: 11px; }
+  .hbadge { background: #0d2a40; border: 1px solid #1a5a8c; border-radius: 4px; padding: 4px 10px; color: #00ccff; }
+  .dot-ok { width: 8px; height: 8px; border-radius: 50%; background: #00ff88; box-shadow: 0 0 6px #00ff88; display: inline-block; margin-right: 5px; }
+
+  /* MAIN CONTENT */
+  .content { padding: 24px 32px; }
+
+  /* SECTION TITLE */
+  .sec-title {
+    font-size: 10px; color: #2a6a8a; letter-spacing: 3px;
+    text-transform: uppercase; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sec-title::after { content: ''; flex: 1; height: 1px; background: #0d2a40; }
+
+  /* ESTADOS GRID */
+  .estados-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+
+  .estado-card {
+    background: #030c1c;
+    border: 1px solid #0c2235;
+    border-radius: 10px;
+    padding: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .estado-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 10px 10px 0 0;
+  }
+  .card-normal::before { background: #00ff88; }
+  .card-alerta::before { background: #ffaa00; }
+  .card-critico::before { background: #ff2222; }
+
+  .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .card-icon { font-size: 20px; }
+  .card-badge {
+    font-size: 10px; font-weight: 700; padding: 3px 8px;
+    border-radius: 20px; letter-spacing: 1px;
+  }
+  .badge-ok { background: rgba(0,255,136,.15); color: #00ff88; border: 1px solid rgba(0,255,136,.3); }
+  .badge-warn { background: rgba(255,170,0,.15); color: #ffaa00; border: 1px solid rgba(255,170,0,.3); }
+  .badge-crit { background: rgba(255,34,34,.15); color: #ff4444; border: 1px solid rgba(255,34,34,.3); }
+
+  .equip-list { margin-bottom: 12px; }
+  .equip-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 12px; color: #4a8aaa; border-bottom: 1px solid #0a1e30; }
+  .equip-row:last-child { border-bottom: none; }
+  .pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .pill-on { background: rgba(0,255,136,.15); color: #00ff88; }
+  .pill-off { background: rgba(255,51,51,.15); color: #ff4444; }
+
+  .result-title { font-size: 9px; color: #2a6a8a; letter-spacing: 2px; margin-bottom: 6px; }
+  .result-item { display: flex; align-items: center; gap: 6px; font-size: 11px; padding: 2px 0; }
+  .r-ok { color: #00ff88; }
+  .r-warn { color: #ffaa00; }
+  .r-crit { color: #ff4444; }
+
+  /* TABLA UMBRALES */
+  .umbrales-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+
+  .umb-table {
+    background: #030c1c; border: 1px solid #0c2235;
+    border-radius: 10px; overflow: hidden;
+  }
+  .umb-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .umb-table th {
+    padding: 8px 12px; font-size: 9px; letter-spacing: 2px;
+    color: #2a6a8a; background: #020810; text-align: left;
+    border-bottom: 1px solid #0c2235;
+  }
+  .umb-table td { padding: 9px 12px; border-bottom: 1px solid #0a1e30; }
+  .umb-table tr:last-child td { border-bottom: none; }
+
+  .temp-ok { color: #00ff88; font-weight: 700; }
+  .temp-warn { color: #ffaa00; font-weight: 700; }
+  .temp-crit { color: #ff4444; font-weight: 700; animation: pulse .8s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+  .bar-wrap { width: 70px; height: 5px; background: #0a1e30; border-radius: 3px; overflow: hidden; display: inline-block; }
+  .bar-fill { height: 100%; border-radius: 3px; }
+
+  /* MODBUS MAP */
+  .modbus-panel {
+    background: #030c1c; border: 1px solid #0c2235;
+    border-radius: 10px; padding: 14px;
+  }
+  .modbus-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .mod-card { background: #020810; border: 1px solid #0c2235; border-radius: 6px; padding: 8px 10px; }
+  .mod-label { font-size: 9px; color: #2a6a8a; letter-spacing: 1px; margin-bottom: 3px; }
+  .mod-val { font-size: 12px; color: #00ccff; font-weight: 700; }
+  .mod-sub { font-size: 9px; color: #1a5a7a; margin-top: 2px; }
+
+  /* MITM */
+  .mitm-panel {
+    background: #0a0420;
+    border: 1px solid #534AB7;
+    border-radius: 10px; padding: 16px; margin-bottom: 24px;
+  }
+  .mitm-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .mitm-title { font-size: 13px; font-weight: 700; color: #AFA9EC; letter-spacing: 1px; }
+  .mitm-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .mitm-step { background: #0d0830; border: 1px solid #3C3489; border-radius: 8px; padding: 10px; }
+  .mitm-num { font-size: 9px; color: #7F77DD; letter-spacing: 2px; margin-bottom: 5px; }
+  .mitm-text { font-size: 11px; color: #CCC8F0; line-height: 1.5; }
+  .mitm-arrow { color: #534AB7; font-size: 16px; align-self: center; }
+
+  /* NETWORK */
+  .net-panel { background: #030c1c; border: 1px solid #0c2235; border-radius: 10px; padding: 14px; margin-bottom: 24px; }
+  .net-diagram { display: flex; align-items: center; justify-content: center; gap: 0; margin-top: 12px; flex-wrap: wrap; }
+  .net-node { background: #020810; border: 1px solid #1a5a8c; border-radius: 8px; padding: 10px 14px; text-align: center; min-width: 110px; }
+  .net-node-label { font-size: 10px; color: #2a6a8a; letter-spacing: 1px; margin-bottom: 3px; }
+  .net-node-ip { font-size: 13px; color: #00ccff; font-weight: 700; font-family: monospace; }
+  .net-node-port { font-size: 10px; color: #1a5a7a; margin-top: 2px; }
+  .net-line { flex: 1; height: 2px; background: #0d2a40; position: relative; min-width: 30px; max-width: 60px; }
+  .net-line-label { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 9px; color: #2a6a8a; white-space: nowrap; letter-spacing: 1px; }
+  .net-kali { border-color: #534AB7; }
+  .net-kali .net-node-ip { color: #AFA9EC; }
+
+  /* FOOTER */
+  .footer { background: #020810; border-top: 1px solid #0d2a40; padding: 12px 32px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #1a5a7a; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-icon">⚡</div>
+    <div>
+      <div class="header-title">Estados de operación — Planta Tratamiento Agua</div>
+      <div class="header-sub">SISTEMA SCADA — MÓDULO DE CIBERSEGURIDAD OT/ICS</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span><span class="dot-ok"></span>PLC: 192.168.55.48:502</span>
+    <span class="hbadge">Modbus TCP</span>
+    <span class="hbadge">FUXA: 192.168.55.124:1881</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="sec-title">Estados de operación</div>
+  <div class="estados-grid">
+
+    <div class="estado-card card-normal">
+      <div class="card-header">
+        <span class="card-icon">✅</span>
+        <span class="card-badge badge-ok">NORMAL</span>
+      </div>
+      <div class="equip-list">
+        <div class="equip-row"><span>Bomba</span><span class="pill pill-on">ON</span></div>
+        <div class="equip-row"><span>Ventilador</span><span class="pill pill-on">ON</span></div>
+      </div>
+      <div class="result-title">RESULTADO</div>
+      <div class="result-item r-ok">↓ Temperatura baja</div>
+      <div class="result-item r-ok">↑ Nivel sube</div>
+      <div class="result-item r-ok">✓ Sin alarmas</div>
+    </div>
+
+    <div class="estado-card card-alerta">
+      <div class="card-header">
+        <span class="card-icon">⚠️</span>
+        <span class="card-badge badge-warn">ALERTA</span>
+      </div>
+      <div class="equip-list">
+        <div class="equip-row"><span>Bomba</span><span class="pill pill-on">ON</span></div>
+        <div class="equip-row"><span>Ventilador</span><span class="pill pill-off">OFF</span></div>
+      </div>
+      <div class="result-title">RESULTADO</div>
+      <div class="result-item r-warn">↑ Temp +3°C por ciclo</div>
+      <div class="result-item r-ok">↑ Nivel sube</div>
+      <div class="result-item r-warn">⚠ Alarma a 60°C</div>
+    </div>
+
+    <div class="estado-card card-alerta">
+      <div class="card-header">
+        <span class="card-icon">⚠️</span>
+        <span class="card-badge badge-warn">ALERTA</span>
+      </div>
+      <div class="equip-list">
+        <div class="equip-row"><span>Bomba</span><span class="pill pill-off">OFF</span></div>
+        <div class="equip-row"><span>Ventilador</span><span class="pill pill-on">ON</span></div>
+      </div>
+      <div class="result-title">RESULTADO</div>
+      <div class="result-item r-warn">↑ Temp +1°C por ciclo</div>
+      <div class="result-item r-crit">↓ Nivel baja</div>
+      <div class="result-item r-warn">⚠ Alarma a 60°C</div>
+    </div>
+
+    <div class="estado-card card-critico">
+      <div class="card-header">
+        <span class="card-icon">🔴</span>
+        <span class="card-badge badge-crit">CRÍTICO</span>
+      </div>
+      <div class="equip-list">
+        <div class="equip-row"><span>Bomba</span><span class="pill pill-off">OFF</span></div>
+        <div class="equip-row"><span>Ventilador</span><span class="pill pill-off">OFF</span></div>
+      </div>
+      <div class="result-title">RESULTADO</div>
+      <div class="result-item r-crit">↑ Temp +5°C por ciclo</div>
+      <div class="result-item r-crit">↓ Nivel baja rápido</div>
+      <div class="result-item r-crit">💥 Explosión a 85°C</div>
+    </div>
+
+  </div>
+
+  <div class="umbrales-grid">
+    <div>
+      <div class="sec-title">Umbrales de temperatura</div>
+      <div class="umb-table">
+        <table>
+          <tr><th>Rango</th><th>Estado</th><th>Acción</th><th>Nivel</th></tr>
+          <tr>
+            <td><span class="temp-ok">0 — 59°C</span></td>
+            <td><span class="pill pill-on">Normal</span></td>
+            <td style="color:#4a8aaa;font-size:11px">Ninguna</td>
+            <td><div class="bar-wrap"><div class="bar-fill" style="width:60%;background:#00ff88"></div></div></td>
+          </tr>
+          <tr>
+            <td><span class="temp-warn">60 — 84°C</span></td>
+            <td><span class="pill" style="background:rgba(255,170,0,.15);color:#ffaa00">Alerta</span></td>
+            <td style="color:#ffaa00;font-size:11px">Verificar ventilador</td>
+            <td><div class="bar-wrap"><div class="bar-fill" style="width:85%;background:#ffaa00"></div></div></td>
+          </tr>
+          <tr>
+            <td><span class="temp-crit">85 — 98°C</span></td>
+            <td><span class="pill pill-off">Crítico</span></td>
+            <td style="color:#ff4444;font-size:11px;font-weight:700">Parar proceso</td>
+            <td><div class="bar-wrap"><div class="bar-fill" style="width:100%;background:#ff2222"></div></div></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec-title">Registros Modbus TCP</div>
+      <div class="modbus-panel">
+        <div class="modbus-grid">
+          <div class="mod-card">
+            <div class="mod-label">BOMBA</div>
+            <div class="mod-val">Coil 0</div>
+            <div class="mod-sub">%QX0.0 — offset 1</div>
+          </div>
+          <div class="mod-card">
+            <div class="mod-label">VENTILADOR</div>
+            <div class="mod-val">Coil 1</div>
+            <div class="mod-sub">%QX0.1 — offset 2</div>
+          </div>
+          <div class="mod-card">
+            <div class="mod-label">TEMPERATURA</div>
+            <div class="mod-val">HR 1024</div>
+            <div class="mod-sub">%MW0 — offset 1025</div>
+          </div>
+          <div class="mod-card">
+            <div class="mod-label">NIVEL TANQUE</div>
+            <div class="mod-val">HR 1025</div>
+            <div class="mod-sub">%MW1 — offset 1026</div>
+          </div>
+          <div class="mod-card">
+            <div class="mod-label">ALARMA TEMP</div>
+            <div class="mod-val">HR 1026</div>
+            <div class="mod-sub">%MW2 — offset 1027</div>
+          </div>
+          <div class="mod-card">
+            <div class="mod-label">ALARMA EXPLOS</div>
+            <div class="mod-val">HR 1027</div>
+            <div class="mod-sub">%MW3 — offset 1028</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-title">Topología de red — VMnet5</div>
+  <div class="net-panel">
+    <div class="net-diagram">
+      <div class="net-node">
+        <div class="net-node-label">SCADA HMI</div>
+        <div class="net-node-ip">192.168.55.124</div>
+        <div class="net-node-port">FUXA :1881</div>
+      </div>
+      <div class="net-line"><span class="net-line-label">Modbus TCP :502</span></div>
+      <div class="net-node">
+        <div class="net-node-label">PLC RUNTIME</div>
+        <div class="net-node-ip">192.168.55.48</div>
+        <div class="net-node-port">OpenPLC :8080</div>
+      </div>
+      <div class="net-line"><span class="net-line-label">ARP Spoof</span></div>
+      <div class="net-node net-kali">
+        <div class="net-node-label">ATACANTE</div>
+        <div class="net-node-ip">Kali Linux</div>
+        <div class="net-node-port">MITM :502</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-title">Escenario de ataque MITM</div>
+  <div class="mitm-panel">
+    <div class="mitm-header">
+      <span style="font-size:20px">🛡</span>
+      <span class="mitm-title">Apagado remoto del ventilador vía inyección Modbus</span>
+    </div>
+    <div class="mitm-steps">
+      <div class="mitm-step">
+        <div class="mitm-num">PASO 1 — RECONOCIMIENTO</div>
+        <div class="mitm-text">Kali escanea la red VMnet5 e identifica PLC (.48) y FUXA (.124)</div>
+      </div>
+      <div class="mitm-step">
+        <div class="mitm-num">PASO 2 — ARP SPOOFING</div>
+        <div class="mitm-text">arpspoof envenena las tablas ARP — Kali queda en medio del tráfico Modbus</div>
+      </div>
+      <div class="mitm-step">
+        <div class="mitm-num">PASO 3 — INYECCIÓN FC05</div>
+        <div class="mitm-text">Write Single Coil al PLC — apaga ventilador (coil 1 = FALSE) sin que FUXA lo detecte</div>
+      </div>
+      <div class="mitm-step">
+        <div class="mitm-num">PASO 4 — IMPACTO</div>
+        <div class="mitm-text">Temperatura sube +3°C/ciclo → alarma 60°C → explosión 85°C — operador no sabe nada</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <span>MÓDULO: CIBERSEGURIDAD EN SISTEMAS OT/ICS</span>
+  <span>PROTOCOLO: IEC 61131-3 — MODBUS TCP — ARP SPOOFING</span>
+  <span>LAB VERSION 1.0</span>
+</div>
+
+</body>
+</html>
