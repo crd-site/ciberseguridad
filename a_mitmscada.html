@@ -10,7 +10,7 @@
 <main>
   <div data-include="aviso-etico"></div>
 
-  <h1>🏭 Laboratorio: Ciberseguridad OT/ICS — Ataques Snnifing, MiTM, DoS sobre Sistemas SCADA - PLC  (Red &amp; Blue Team)</h1>
+  <h1>🏭 Laboratorio: Ciberseguridad OT/ICS — Ataques sobre Modbus TCP (Red &amp; Blue Team)</h1>
 
   <p>
     Este laboratorio demuestra cómo un atacante con acceso a una red OT (Operational Technology)
@@ -107,37 +107,66 @@
   <h3>Instalación completa en Kali (con NAT activo)</h3>
 
   <p>
-    Con Kali conectada a Internet (NAT), ejecutar los siguientes comandos en orden:
+    Con Kali conectada a Internet (NAT), ejecutar los siguientes comandos en orden.
+    Es importante seguir el orden exacto — las dependencias del sistema deben instalarse
+    antes de las librerías Python que las requieren.
   </p>
 
   <pre><code># Paso 1 — Actualizar repositorios
-sudo apt update
+sudo apt update && sudo apt upgrade -y</code></pre>
 
-# Paso 2 — Instalar herramientas de red (si no están)
-sudo apt install -y dsniff ettercap-text-only wireshark python3-pip python3-scapy
+  <pre><code># Paso 2 — Instalar herramientas de red y dependencias del sistema
+sudo apt install -y \
+  dsniff \
+  ettercap-text-only \
+  wireshark \
+  python3-pip \
+  python3-scapy \
+  libnetfilter-queue-dev \
+  libnfnetlink-dev \
+  libmnl-dev</code></pre>
 
-# Paso 3 — Instalar librerías Python con privilegios de sistema
-# (necesario porque los scripts se ejecutan con sudo)
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Por qué se necesitan libnetfilter-queue-dev y libnfnetlink-dev:</strong>
+    La librería <code>netfilterqueue</code> de Python se compila desde código C durante
+    la instalación. Necesita los headers del kernel de Linux para la intercepción de paquetes.
+    Sin estas dependencias del sistema, pip falla con el error
+    <code>fatal error: libnfnetlink/linux_nfnetlink.h: No such file or directory</code>.
+  </div>
+
+  <pre><code># Paso 3 — Instalar librerías Python con privilegios de sistema
+# (necesario porque los scripts de ataque se ejecutan con sudo)
 sudo pip3 install pymodbus --break-system-packages
-sudo pip3 install netfilterqueue --break-system-packages
+sudo pip3 install netfilterqueue --break-system-packages</code></pre>
 
-# Paso 4 — Verificar instalaciones
-arpspoof 2>&1 | head -1
+  <pre><code># Paso 4 — Verificar todas las instalaciones
+# arpspoof necesita sudo para verificar correctamente
+sudo arpspoof 2>&1 | grep -i "version\|usage\|UID" | head -1
+
 python3 -c "from pymodbus.client import ModbusTcpClient; print('pymodbus OK')"
 python3 -c "from netfilterqueue import NetfilterQueue; print('netfilterqueue OK')"
 python3 -c "from scapy.all import IP; print('scapy OK')"</code></pre>
 
-  <p>El resultado esperado de las verificaciones:</p>
-  <pre><code>Version 2.x - ...       ← arpspoof presente
+  <p>Resultado esperado de las verificaciones:</p>
+  <pre><code>UID/EUID 0 or capability CAP_NET_RAW required   ← arpspoof presente (normal sin sudo)
 pymodbus OK
 netfilterqueue OK
 scapy OK</code></pre>
 
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 El mensaje de arpspoof es normal:</strong>
+    <code>UID/EUID 0 or capability CAP_NET_RAW required</code> significa que arpspoof
+    está instalado correctamente pero requiere privilegios root para ejecutarse.
+    No es un error — es el comportamiento esperado. En el laboratorio siempre se
+    ejecuta con <code>sudo</code>.
+  </div>
+
   <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
     <strong>⚠️ Error común — externally-managed-environment:</strong>
-    Si pip3 devuelve este error, usar el flag <code>--break-system-packages</code>
-    que ya está incluido en los comandos anteriores. Es seguro en este contexto de laboratorio.
-    Si el error persiste, alternativa: <code>sudo apt install python3-pymodbus</code>
+    Si pip3 devuelve este error al instalar pymodbus o netfilterqueue,
+    el flag <code>--break-system-packages</code> ya incluido en los comandos anteriores
+    lo resuelve. Es seguro en este contexto de laboratorio.
+    Alternativa si persiste: <code>sudo apt install python3-pymodbus</code>
   </div>
 
   <hr>
