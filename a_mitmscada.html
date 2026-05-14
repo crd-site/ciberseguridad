@@ -272,6 +272,15 @@ scapy OK</code></pre>
   <p>
     Una vez completadas todas las instalaciones de paquetes (que requirieron NAT/Internet),
     reconectar la interfaz de red de Kali a VMnet5:
+
+      
+  <div style="background-color: #3d3722; padding: 15px; border-left: 5px solid #07bdff; margin-bottom: 20px;">
+    <strong>💡 Recuerda: en VMWare Workstation ==> Edit | Virtual Network Editor | VMNte5 ==> tiene que tener habilitado el DHCP con el segmento de red 192.168.55.0 mascara 255.255.255.0</strong>
+
+  </div>
+
+
+
   </p>
 
   <ol>
@@ -505,7 +514,7 @@ ping -c 3 192.168.55.130   # FUXA → Kali</code></pre>
     </tbody>
   </table>
 
-  <h2>🔧 Proceso Simulado — Planta de Tratamiento de Agua</h2>
+  <h2>🔧 Proceso — Planta de Tratamiento de Agua</h2>
 
   <p>
     El PLC ejecuta un programa en lenguaje Structured Text (IEC 61131-3) que simula
@@ -550,6 +559,8 @@ ping -c 3 192.168.55.130   # FUXA → Kali</code></pre>
   </table>
 
   <h2>📋 Scripts del laboratorio</h2>
+
+  <P>De la carpata compartida descargar "G. Script_Lab_SCADA.zip" que contiende los diversos script para ejecutar el laboratorio</P>
 
   <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
     <thead>
@@ -701,14 +712,20 @@ print('Reconocimiento completado.')
   <pre><code>=== RECONOCIMIENTO MODBUS SIN CREDENCIALES ===
 Conectando a 192.168.55.48:502...
 Escaneando coils (outputs digitales)...
-  Coil 0: True    ← bomba_on
-  Coil 1: True    ← ventilador_on
+  Coil 0: True
+  Coil 1: True
   Coil 2: False
-  ...
+  Coil 3: False
+  Coil 4: False
+  Coil 5: False
+  Coil 6: False
+  Coil 7: False
 
 Escaneando holding registers con valor != 0...
-  HR address=1024 offset=1025: 38   ← temperatura en °C
-  HR address=1025 offset=1026: 62   ← nivel del tanque en %</code></pre>
+  HR address=1024 offset=1025: 20
+  HR address=1025 offset=1026: 90
+Reconocimiento completado.
+</code></pre>
 
   <h3>Mapa de registros descubiertos</h3>
   <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
@@ -780,13 +797,13 @@ Escaneando holding registers con valor != 0...
     en parada de emergencia automática — exactamente lo que el atacante quería desactivar.
   </p>
 
-  <h3>Paso 1 — Abrir el monitor en una terminal (recomendado)</h3>
+  <h3>Paso 1 — Abrir el monitor en una terminal (dentro de la carpeta de los script)</h3>
   <pre><code># Terminal 1 — ver el efecto en tiempo real
 python3 2_monitor.py</code></pre>
 
-  <h3>Paso 2 — Ejecutar el ataque de inyección directa</h3>
+  <h3>Paso 2 — Ejecutar el ataque de inyección directa (abrir otra terminal dentro de la carpeta)</h3>
   <pre><code># Terminal 2 — menú de ataques
-python3 3_ataque.py</code></pre>
+sudo python3 3_ataque.py</code></pre>
   <p>Elegir opción <strong>1 — Ataque directo</strong></p>
 
   <h3>Equivalente manual del ataque</h3>
@@ -844,6 +861,7 @@ c.write_coil(address=1, value=True)
 print('Sistema restaurado')
 c.close()
 "</code></pre>
+<p> o Directamente opcion 3 "Restaurar Sistema Completo"</p>
 
   <hr>
 
@@ -864,7 +882,7 @@ c.close()
     También incluía un módulo de borrado de logs para eliminar evidencia después del ataque.
   </p>
 
-  <h3>Paso 1 — Iniciar ARP Spoofing (Terminal 1 — dejar corriendo)</h3>
+  <h3>Paso 1 — Iniciar ARP Spoofing (Abrir una nueva Terminal y dejar corriendo)</h3>
   <pre><code>sudo bash 1_arp_spoof.sh</code></pre>
 
   <p>Verificar que las MACs del PLC y FUXA ahora apuntan a Kali:</p>
@@ -886,7 +904,7 @@ arp -a</code></pre>
     <li>Kali intercepta las respuestas FC01 del PLC hacia FUXA</li>
     <li>Modifica el bit del ventilador de 0 a 1 antes de reenviar</li>
     <li>FUXA recibe una respuesta falsificada — muestra ventilador ON</li>
-    <li>El operador no detecta nada — la temperatura sube sin explicación aparente</li>
+    <li>El operador no detecta nada — la temperatura sube sin explicación aparente (cada x segundos el SCADA FUXA podria mostrar el estado intermitente)</li>
   </ol>
 
   <div style="background-color: #3d1515; padding: 15px; border-left: 5px solid #ff4444; margin-bottom: 20px;">
@@ -926,7 +944,7 @@ arp -a</code></pre>
   <pre><code>sudo bash 1_arp_spoof.sh</code></pre>
 
   <h3>Paso 2 — Ejecutar flooding (Terminal 2)</h3>
-  <pre><code>python3 ataque_flood.py</code></pre>
+  <pre><code>sudo python3 ataque_flood.py</code></pre>
 
   <h3>Modos disponibles</h3>
   <table border="1" cellpadding="6" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
